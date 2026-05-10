@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Shows VPN indicator if a tun/wg interface is up
+if ip link show 2>/dev/null | grep -qE '^[0-9]+: (tun|wg)[0-9]+:'; then
+  printf "󰒃 VPN"
+fi

@@ -1,0 +1,154 @@
+#!/usr/bin/env bash
+# active-file <PANE_PID> <CWD>
+# Shows the CURRENT file even if you opened it after editor start (e.g., :e scripts.js).
+# Order of detection:
+#   1) Neovim via nvr + NVIM_LISTEN_ADDRESS from editor's environment
+#   2) Open fds in /proc/<pid>/fd (no lsof needed)
+#   3) argv fallback
+# Prints a tmux-colored " filename " box with inside padding, NO outside spaces.
+
+set -euo pipefail
+PANE_PID="${1:-}"
+CWD="${2:-$PWD}"
+[[ -n "$PANE_PID" ]] || exit 0
+
+# Colors (fallbacks—your tmux line can override via CF_BG/CF_FG/BAR_BG/BAR_FG)
+CF_BG="${CF_BG:-#45475a}"   # SURFACE1
+CF_FG="${CF_FG:-#cdd6f4}"   # TEXT
+BAR_BG="${BAR_BG:-#313244}" # SURFACE0
+BAR_FG="${BAR_FG:-#cdd6f4}" # TEXT
+
+# --- helpers ---------------------------------------------------------------
+is_code() {
+  case "$1" in
+  *.js | *.jsx | *.ts | *.tsx | *.json | *.css | *.scss | *.less | *.html | *.vue | *.svelte | \
+    *.lua | *.vim | *.py | *.rb | *.go | *.rs | *.php | *.java | *.kt | *.swift | *.tex | *.md | \
+    *.yml | *.yaml | *.toml | *.ini | *.conf | *.c | *.h | *.hpp | *.cpp | *.cc | *.m | *.mm | *.sql | \
+    *.sh | *.zsh | *.fish | *.ps1 | *.pl | *.r | *.dart | *.hs | *.el | *.ex | *.exs) return 0 ;;
+  *) return 1 ;;
+  esac
+}
+
+score_file() {
+  # score = base + cwd bonus + code ext bonus + recent mtime bonus
+  local path="$1" base=0 bonus=0 mtime=0 now=$(date +%s)
+  [[ "$path" == "$CWD"* ]] && bonus=$((bonus + 10))
+  is_code "$path" && bonus=$((bonus + 8))
+  mtime=$(stat -c %Y -- "$path" 2>/dev/null || echo 0)
+  # bonus if touched in last 30 min
+  if [[ "$mtime" -gt 0 && $((now - mtime)) -lt 1800 ]]; then bonus=$((bonus + 5)); fi
+  echo $((base + bonus))
+}
+
+read_env_from_pid() {
+  # read VAR=value from /proc/<pid>/environ (Linux)
+  local pid="$1" var="$2"
+  [[ -r "/proc/$pid/environ" ]] || return 1
+  tr '\0' '\n' <"/proc/$pid/environ" | awk -F= -v k="$var" '$1==k{print substr($0,length(k)+2)}'
+}
+
+collect_descendants() {
+  # BFS over children using pgrep -P (preferred), else ps fallback
+  local root="$1"
+  declare -A seen
+  seen["$root"]=1
+  local queue=("$root") out=("$root")
+  if command -v pgrep >/dev/null 2>&1; then
+    for ((i = 0; i < ${#queue[@]}; i++)); do
+      while read -r c; do
+        [[ -n "$c" && -z "${seen[$c]+x}" ]] && {
+          seen["$c"]=1
+          queue+=("$c")
+          out+=("$c")
+        }
+      done < <(pgrep -P "${queue[$i]}" 2>/dev/null || true)
+    done
+  else
+    # one-shot map from ps
+    while read -r ppid pid; do
+      ps_ppid["$pid"]="$ppid"
+    done < <(ps -eo ppid=,pid=)
+    changed=1
+    while [[ $changed -eq 1 ]]; do
+      changed=0
+      for pid in "${!ps_ppid[@]}"; do
+        [[ "${ps_ppid[$pid]-}" == "$root" || -n "${seen[${ps_ppid[$pid]}]+x}" ]] &&
+          { [[ -z "${seen[$pid]+x}" ]] && {
+            seen["$pid"]=1
+            out+=("$pid")
+            changed=1
+          }; }
+      done
+    done
+  fi
+  printf '%s\n' "${out[@]}"
+}
+
+# --- 1) find an editor pid under the pane ------------------------------------
+ed_pid=""
+while read -r pid; do
+  comm="$(ps -o comm= -p "$pid" 2>/dev/null || true)"
+  case "$comm" in
+  nvim | vim | vi | nano | hx | helix | micro | emacs | emacsclient | kak | kakoune)
+    [[ -z "$ed_pid" || "$pid" -gt "$ed_pid" ]] && ed_pid="$pid"
+    ;;
+  esac
+done < <(collect_descendants "$PANE_PID")
+[[ -n "$ed_pid" ]] || exit 0
+
+# --- 2) Neovim via nvr (best) -----------------------------------------------
+if command -v nvr >/dev/null 2>&1; then
+  addr="$(read_env_from_pid "$ed_pid" NVIM_LISTEN_ADDRESS || true)"
+  if [[ -n "$addr" ]]; then
+    # suppress errors if no current file
+    current="$(NVIM_LISTEN_ADDRESS="$addr" nvr --nostart --servername "$addr" --remote-expr "expand('%:p')" 2>/dev/null || true)"
+    if [[ -n "$current" && -f "$current" ]]; then
+      name="$(basename -- "$current")"
+      printf '#[bg=%s,fg=%s] %s #[bg=%s,fg=%s]' "$CF_BG" "$CF_FG" "$name" "$BAR_BG" "$BAR_FG"
+      exit 0
+    fi
+  fi
+fi
+
+# --- 3) /proc/<pid>/fd scan (no lsof) ---------------------------------------
+best=""
+best_score=-1
+if [[ -d "/proc/$ed_pid/fd" ]]; then
+  while IFS= read -r link; do
+    path="$(readlink -f -- "$link" 2>/dev/null || true)"
+    [[ -n "$path" && -f "$path" ]] || continue
+    case "$path" in
+    */.git/* | */node_modules/* | */.cache/* | */.local/* | */plugged/* | */site/*) continue ;;
+    *.swp | *.swo | *.tmp | *.undo | *.log | *.sqlite | *.db) continue ;;
+    esac
+    s=$(score_file "$path")
+    if ((s > best_score)); then
+      best="$path"
+      best_score="$s"
+    fi
+  done < <(find "/proc/$ed_pid/fd" -maxdepth 1 -type l 2>/dev/null)
+fi
+
+# --- 4) argv fallback --------------------------------------------------------
+if [[ -z "$best" ]]; then
+  if [[ -r "/proc/$ed_pid/cmdline" ]]; then
+    cmdline="$(tr '\0' ' ' <"/proc/$ed_pid/cmdline" 2>/dev/null || true)"
+  else
+    cmdline="$(ps -o command= -p "$ed_pid" 2>/dev/null || true)"
+  fi
+  for tok in $cmdline; do
+    [[ "$tok" =~ ^- ]] && continue
+    case "$tok" in
+    /*) cand="$tok" ;;
+    ~*) cand="$(eval printf %s "$tok")" ;;
+    *) cand="$CWD/$tok" ;;
+    esac
+    [[ -f "$cand" ]] || continue
+    best="$cand"
+    break
+  done
+fi
+
+[[ -n "$best" ]] || exit 0
+name="$(basename -- "$best")"
+printf '#[bg=%s,fg=%s] %s #[bg=%s,fg=%s]' "$CF_BG" "$CF_FG" "$name" "$BAR_BG" "$BAR_FG"

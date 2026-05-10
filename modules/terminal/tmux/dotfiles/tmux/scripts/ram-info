@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# RAM usage percentage
+free | awk '/^Mem:/ {printf "󰍛 %.0f%%", $3/$2*100}'

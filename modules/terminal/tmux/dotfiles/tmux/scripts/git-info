@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# git-info <DIR>
+# Outputs: "<icon> <branch> [↑N] [↓M] [+a] [~m] [-d]" (only counts >0 shown)
+# No tmux color codes here (wrapper colors it). No trailing spaces.
+
+set -euo pipefail
+dir="${1:-.}"
+git -C "$dir" rev-parse --is-inside-work-tree &>/dev/null || exit 0
+
+BR_ICON=${BR_ICON:-"󰊢"}
+ADD_ICON=${ADD_ICON:-"󰐕"}
+MOD_ICON=${MOD_ICON:-"󰷫"}
+DEL_ICON=${DEL_ICON:-"󰍴"}
+AHEAD_ICON=${AHEAD_ICON:-"󰜷"}
+BEHIND_ICON=${BEHIND_ICON:-"󰜮"}
+
+# branch or tag or short sha
+branch="$(
+  git -C "$dir" symbolic-ref --quiet --short HEAD 2>/dev/null ||
+    git -C "$dir" describe --tags --exact-match 2>/dev/null ||
+    git -C "$dir" rev-parse --short HEAD 2>/dev/null ||
+    echo "detached"
+)"
+
+# status (ignore untracked)
+porcelain="$(git -C "$dir" status --porcelain 2>/dev/null | grep -v '^??' || true)"
+added=$(printf "%s\n" "$porcelain" | grep -E '^(A|M)' -c || true)
+modified=$(printf "%s\n" "$porcelain" | grep -E '^.[MT]' -c || true)
+deleted=$(printf "%s\n" "$porcelain" | grep -E '^(D|R|C)' -c || true)
+
+# ahead/behind
+ahead=0
+behind=0
+if git -C "$dir" rev-parse --verify -q '@{upstream}' >/dev/null 2>&1; then
+  read behind ahead < <(git -C "$dir" rev-list --left-right --count @{upstream}...HEAD | awk '{print $1, $2}')
+fi
+
+out="${BR_ICON} ${branch}"
+((ahead > 0)) && out+="  ${AHEAD_ICON}${ahead}"
+((behind > 0)) && out+="  ${BEHIND_ICON}${behind}"
+((added > 0)) && out+="  ${ADD_ICON}${added}"
+((modified > 0)) && out+="  ${MOD_ICON}${modified}"
+((deleted > 0)) && out+="  ${DEL_ICON}${deleted}"
+printf "%s" "$out"

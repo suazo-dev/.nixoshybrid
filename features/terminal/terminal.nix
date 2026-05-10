@@ -1,0 +1,42 @@
+{
+  modules = [
+    "zsh"
+    "nushell"
+    "starship"
+    "tmux"
+    "yazi"
+    "fastfetch"
+    "ripgrep"
+    "fd"
+    "fzf"
+    "zoxide"
+    "atuin"
+    "eza"
+    "bat"
+    "delta"
+    "btop"
+    "tealdeer"
+    "tree"
+    "lsof"
+    "inetutils"
+    "rsync"
+    "pv"
+    "curl"
+    "wget"
+    "jq"
+    "unzip"
+    "zip"
+    "file"
+    "p7zip"
+    "gnugrep"
+    "gawk"
+    "gnumake"
+  ];
+
+  linuxModules = [
+    "psmisc"
+    "pciutils"
+    "usbutils"
+    "iproute2"
+  ];
+}

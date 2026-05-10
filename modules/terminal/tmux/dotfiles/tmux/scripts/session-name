@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+name="${1:-}"
+path="${2:-$PWD}"
+
+if [[ -z "$name" || "$name" =~ ^[0-9]+$ ]]; then
+  exit 0
+fi
+
+markers=(
+  .git
+  flake.nix
+  package.json
+  pyproject.toml
+  go.mod
+  Cargo.toml
+)
+
+find_project_root() {
+  local dir="$1"
+
+  if git -C "$dir" rev-parse --show-toplevel >/dev/null 2>&1; then
+    git -C "$dir" rev-parse --show-toplevel
+    return 0
+  fi
+
+  while [[ "$dir" != "/" ]]; do
+    local marker
+    for marker in "${markers[@]}"; do
+      if [[ -e "$dir/$marker" ]]; then
+        printf '%s\n' "$dir"
+        return 0
+      fi
+    done
+    dir="$(dirname -- "$dir")"
+  done
+
+  return 1
+}
+
+sanitize_segment() {
+  printf '%s' "$1" \
+    | tr '/[:space:]' '.' \
+    | tr -cs '[:alnum:]._-' '_' \
+    | sed -E 's/^[._-]+//; s/[._-]+$//; s/[.]+/./g'
+}
+
+build_auto_name() {
+  local dir="$1"
+  local root rel project leaf
+
+  if root="$(find_project_root "$dir" 2>/dev/null)"; then
+    project="$(basename -- "$root")"
+    if [[ "$dir" == "$root" ]]; then
+      sanitize_segment "$project"
+      return 0
+    fi
+
+    rel="${dir#"$root"/}"
+    printf '%s.%s\n' "$(sanitize_segment "$project")" "$(sanitize_segment "$rel")"
+    return 0
+  fi
+
+  leaf="$(basename -- "$dir")"
+  if [[ "$leaf" == "/" || "$leaf" == "." || -z "$leaf" ]]; then
+    leaf="home"
+  fi
+  sanitize_segment "$leaf"
+}
+
+if auto_name="$(build_auto_name "$path" 2>/dev/null)"; then
+  if [[ -n "$auto_name" && "$name" == "$auto_name" ]]; then
+    exit 0
+  fi
+fi
+
+printf '%s' "$name"

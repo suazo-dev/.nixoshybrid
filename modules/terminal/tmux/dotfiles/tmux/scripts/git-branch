@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+dir="${1:-.}"
+git -C "$dir" rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
+
+git -C "$dir" symbolic-ref --quiet --short HEAD 2>/dev/null || \
+  git -C "$dir" describe --tags --exact-match 2>/dev/null || \
+  git -C "$dir" rev-parse --short HEAD 2>/dev/null || \
+  exit 0

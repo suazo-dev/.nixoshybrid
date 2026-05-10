@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Shows active network interface
+iface=$(ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="dev") {print $(i+1); exit}}')
+if [[ -z "$iface" ]]; then
+  printf "󰖂 offline"
+else
+  printf "󰀂 %s" "$iface"
+fi

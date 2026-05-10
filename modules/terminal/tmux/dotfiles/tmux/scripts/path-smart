@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Usage: path-smart <client_width> <pane_current_path>
+# Prints:
+#   - full path with ~ for $HOME when width >= cutoff
+#   - basename (current dir) when width < cutoff
+set -euo pipefail
+w="${1:-0}"
+p="${2:-$PWD}"
+cutoff="${PATH_FULL_WIDTH:-120}"    # change via env if you like
+
+if [ "$w" -ge "$cutoff" ]; then
+  # collapse $HOME to ~
+  printf '%s' "$p" | sed "s:^$HOME:~:"
+else
+  basename -- "$p"
+fi

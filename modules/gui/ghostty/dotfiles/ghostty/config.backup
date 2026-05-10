@@ -1,0 +1,17 @@
+# ~/.config/ghostty/config
+
+font-family = JetBrainsMono Nerd Font
+font-size = 11
+font-style = Bold
+gtk-titlebar = false
+window-padding-x = 10
+window-padding-y = 8,4
+window-padding-balance = true
+adjust-cell-height = 20%
+adjust-font-baseline = -2
+scrollback-limit = 1000000
+copy-on-select = true
+
+
+
+theme = noctalia

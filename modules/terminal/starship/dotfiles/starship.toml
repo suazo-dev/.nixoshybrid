@@ -1,0 +1,601 @@
+"$schema" = 'https://starship.rs/config-schema.json'
+
+format = """
+[╭─ ](overlay1)$hostname\
+$directory\
+$git_branch\
+$git_state\
+$git_status\
+${custom.project}\
+$nix_shell\
+$python\
+$line_break\
+[╰─ ](overlay1)$character$status"""
+
+palette = "catppuccin_mocha"
+add_newline = true
+
+[nix_shell]
+symbol = " "
+style = "teal"
+format = "[ | ](overlay0)[$symbol$name]($style)"
+impure_msg = "impure"
+pure_msg = "pure"
+unknown_msg = ""
+
+[username]
+show_always = false
+style_user = "bold text"
+style_root = "bold text"
+format = "[$user]($style) "
+
+[hostname]
+ssh_only = false
+ssh_symbol = " "
+style = "overlay1"
+format = "[$hostname]($style)"
+
+[localip]
+ssh_only = true
+disabled = false
+style = "bold text"
+format = "[$localipv4]($style) "
+
+[shlvl]
+disabled = false
+threshold = 3
+symbol = "↕ "
+style = "bold lavender"
+format = "[$symbol$shlvl]($style) "
+
+[directory]
+style = "pink"
+format = "[ | ](overlay0)[󰉋 $path]($style)[$read_only]($read_only_style)"
+truncation_length = 3
+truncation_symbol = "…/"
+home_symbol = "~"
+truncate_to_repo = false
+read_only = "󰌾"
+read_only_style = "maroon"
+
+[directory.substitutions]
+Developer = "󰲋 "
+Documents = "󰈙 "
+Downloads = " "
+Music = "󰝚 "
+Pictures = " "
+
+[git_branch]
+symbol = " "
+style = "blue"
+format = "[ | ](overlay0)[$symbol$branch]($style)"
+truncation_length = 24
+
+[git_commit]
+style = "bold lavender"
+format = "[($hash$tag)]($style) "
+only_detached = true
+tag_symbol = "  "
+
+[git_state]
+style = "bold peach"
+format = "[ | ](overlay0)[$state( $progress_current/$progress_total)]($style)"
+
+[git_metrics]
+disabled = true
+added_style = "bold green"
+deleted_style = "bold red"
+format = "([+$added]($added_style) )([-$deleted]($deleted_style) )"
+
+[git_status]
+style = "peach"
+format = "([ | ](overlay0)[$all_status$ahead_behind]($style))"
+ahead = "ahead ${count} "
+behind = "behind ${count} "
+diverged = "diverged "
+conflicted = "conflict "
+deleted = "deleted "
+modified = "modified "
+renamed = "renamed "
+staged = " staged "
+stashed = "stashed "
+untracked = "untracked "
+
+[direnv]
+disabled = false
+symbol = "direnv "
+style = "bold blue"
+format = "[$symbol$loaded/$allowed]($style) "
+
+[docker_context]
+symbol = " "
+style = "bold blue"
+format = "[$symbol$context]($style) "
+only_with_files = true
+
+[kubernetes]
+symbol = "󱃾 "
+style = "bold blue"
+format = '[$symbol$context( \($namespace\))]($style) '
+disabled = true
+
+[package]
+symbol = "󰏗 "
+style = "bold blue"
+format = "[$symbol$version]($style) "
+disabled = true
+
+[bun]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[c]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[cpp]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[cmake]
+symbol = "△ "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[deno]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[dotnet]
+symbol = "󰪮 "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[java]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[kotlin]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[lua]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[php]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[ruby]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[swift]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[terraform]
+symbol = "󱁢 "
+style = "blue"
+format = "[ | ](overlay0)[$symbol$workspace]($style)"
+disabled = false
+
+[helm]
+symbol = "⎈ "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[python]
+symbol = " "
+style = "teal"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$virtualenv]($style)"
+detect_extensions = []
+detect_files = []
+detect_folders = []
+disabled = false
+
+[nodejs]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[rust]
+symbol = "󱘗 "
+style = "mauve"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol rust $version]($style)"
+disabled = false
+
+[golang]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[haskell]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[elixir]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[erlang]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[dart]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[elm]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[crystal]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[gleam]
+symbol = "󰦥 "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[haxe]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[julia]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[mojo]
+symbol = "󰫢 "
+style = "blue"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[nim]
+symbol = "󰆥 "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[ocaml]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = '[ | ](overlay0)[$symbol$version(\($switch_indicator$switch_name\))]($style)'
+disabled = false
+
+[odin]
+symbol = "󰟢 "
+style = "blue"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[perl]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[quarto]
+symbol = "󱋙 "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[rlang]
+symbol = "󰟔 "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[scala]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[typst]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[vlang]
+symbol = " "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[zig]
+symbol = "↯ "
+style = "blue"
+version_format = "${raw}"
+format = "[ | ](overlay0)[$symbol$version]($style)"
+disabled = false
+
+[cmd_duration]
+min_time = 1
+show_milliseconds = true
+style = "maroon"
+format = "[ | ](overlay0)[󰾆 $duration]($style)"
+
+[jobs]
+symbol = "✦ "
+style = "bold lavender"
+number_threshold = 1
+format = "[$symbol$number]($style) "
+
+[os]
+disabled = true
+style = "bold red"
+format = "[$symbol]($style) "
+
+[os.symbols]
+Arch = " "
+Debian = " "
+Fedora = " "
+Linux = " "
+Macos = " "
+NixOS = " "
+Ubuntu = " "
+Windows = "󰍲 "
+
+[container]
+symbol = "⬢"
+style = "bold lavender"
+format = '[$symbol \[$name\]]($style) '
+
+[netns]
+symbol = "🛜"
+style = "bold lavender"
+format = '[$symbol \[$name\]]($style) '
+
+[shell]
+disabled = true
+
+[fill]
+symbol = " "
+
+[time]
+disabled = false
+time_format = "%R"
+style = "bold pink"
+format = "[ $time]($style)"
+
+[line_break]
+disabled = false
+
+[character]
+success_symbol = "[❯](white) "
+error_symbol = "[❯](maroon) "
+vimcmd_symbol = "[❮](text) "
+vimcmd_visual_symbol = "[❮](text) "
+vimcmd_replace_one_symbol = "[❮](text) "
+vimcmd_replace_symbol = "[❮](text) "
+
+[status]
+disabled = false
+symbol = "󰅖"
+success_symbol = ""
+not_found_symbol = "󰍉"
+not_executable_symbol = "󰜺"
+sigint_symbol = "󱊷"
+signal_symbol = "󱐋"
+failure_style = "maroon"
+recognize_signal_code = true
+map_symbol = true
+format = "[ $symbol]($style)"
+
+[sudo]
+disabled = false
+style = "bold red"
+format = "[sudo]($style) "
+
+[custom.excel]
+command = "printf '󰈛'"
+detect_extensions = ["csv", "ods", "tsv", "xls", "xlsx"]
+style = "bold blue"
+format = "[$output Excel]($style) "
+
+[custom.sql]
+command = "printf ' SQL'"
+detect_extensions = ["db", "duckdb", "sql", "sqlite", "sqlite3"]
+detect_files = ["schema.sql"]
+style = "bold blue"
+format = "[$output]($style) "
+
+[custom.docs]
+command = "printf '󰈙 Docs'"
+detect_extensions = ["adoc", "md", "mdx", "rst", "tex"]
+detect_files = ["README.md", "mkdocs.yml", "mkdocs.yaml"]
+style = "bold blue"
+format = "[$output]($style) "
+
+[custom.compose]
+command = "printf ' Compose'"
+detect_files = ["compose.yaml", "compose.yml", "docker-compose.yaml", "docker-compose.yml"]
+style = "bold blue"
+format = "[$output]($style) "
+
+[custom.dockerfile]
+command = "printf ' Dockerfile'"
+detect_files = ["Dockerfile"]
+style = "bold blue"
+format = "[$output]($style) "
+
+[custom.project]
+shell = ["sh"]
+command = """
+dir=\"$PWD\"
+while [ \"$dir\" != \"/\" ]; do
+  if [ -f \"$dir/Cargo.toml\" ]; then
+    printf '󱘗 Rust'
+    exit 0
+  fi
+  if [ -f \"$dir/pyproject.toml\" ] || [ -f \"$dir/uv.lock\" ] || [ -f \"$dir/requirements.txt\" ] || [ -f \"$dir/Pipfile\" ] || [ -f \"$dir/poetry.lock\" ]; then
+    printf ' Python'
+    exit 0
+  fi
+  if [ -f \"$dir/package.json\" ] || [ -f \"$dir/bun.lock\" ] || [ -f \"$dir/bun.lockb\" ] || [ -f \"$dir/deno.json\" ] || [ -f \"$dir/deno.jsonc\" ] || [ -f \"$dir/tsconfig.json\" ]; then
+    printf ' JS'
+    exit 0
+  fi
+  if [ -f \"$dir/go.mod\" ]; then
+    printf ' Go'
+    exit 0
+  fi
+  if [ -f \"$dir/gleam.toml\" ]; then
+    printf '󰦥 Gleam'
+    exit 0
+  fi
+  for file in \"$dir\"/*.gleam; do
+    if [ -e \"$file\" ]; then
+      printf '󰦥 Gleam'
+      exit 0
+    fi
+  done
+  if [ -f \"$dir/flake.nix\" ] || [ -f \"$dir/shell.nix\" ]; then
+    printf ' Nix'
+    exit 0
+  fi
+  if [ -f \"$dir/CMakeLists.txt\" ] || [ -f \"$dir/meson.build\" ]; then
+    printf ' C'
+    exit 0
+  fi
+  for file in \"$dir\"/*.c \"$dir\"/*.h; do
+    if [ -e \"$file\" ]; then
+      printf ' C'
+      exit 0
+    fi
+  done
+  parent=$(dirname \"$dir\")
+  [ \"$parent\" = \"$dir\" ] && break
+  dir=\"$parent\"
+done
+exit 1
+"""
+when = """
+dir=\"$PWD\"
+while [ \"$dir\" != \"/\" ]; do
+  if [ -f \"$dir/Cargo.toml\" ] || [ -f \"$dir/pyproject.toml\" ] || [ -f \"$dir/uv.lock\" ] || [ -f \"$dir/requirements.txt\" ] || [ -f \"$dir/Pipfile\" ] || [ -f \"$dir/poetry.lock\" ] || [ -f \"$dir/package.json\" ] || [ -f \"$dir/bun.lock\" ] || [ -f \"$dir/bun.lockb\" ] || [ -f \"$dir/deno.json\" ] || [ -f \"$dir/deno.jsonc\" ] || [ -f \"$dir/tsconfig.json\" ] || [ -f \"$dir/go.mod\" ] || [ -f \"$dir/gleam.toml\" ] || [ -f \"$dir/flake.nix\" ] || [ -f \"$dir/shell.nix\" ] || [ -f \"$dir/CMakeLists.txt\" ] || [ -f \"$dir/meson.build\" ]; then
+    exit 0
+  fi
+  for file in \"$dir\"/*.gleam \"$dir\"/*.c \"$dir\"/*.h; do
+    if [ -e \"$file\" ]; then
+      exit 0
+    fi
+  done
+  parent=$(dirname \"$dir\")
+  [ \"$parent\" = \"$dir\" ] && break
+  dir=\"$parent\"
+done
+exit 1
+"""
+style = "mauve"
+format = "[ | ](overlay0)[$output]($style)"
+
+[palettes.catppuccin_mocha]
+rosewater = "#f5e0dc"
+flamingo = "#f2cdcd"
+pink = "#f5c2e7"
+mauve = "#cba6f7"
+red = "#f38ba8"
+maroon = "#eba0ac"
+peach = "#fab387"
+yellow = "#f9e2af"
+green = "#a6e3a1"
+teal = "#94e2d5"
+sky = "#89dceb"
+sapphire = "#74c7ec"
+blue = "#89b4fa"
+lavender = "#b4befe"
+text = "#cdd6f4"
+subtext1 = "#bac2de"
+subtext0 = "#a6adc8"
+overlay2 = "#9399b2"
+overlay1 = "#7f849c"
+overlay0 = "#6c7086"
+surface2 = "#585b70"
+surface1 = "#45475a"
+surface0 = "#313244"
+base = "#1e1e2e"
+mantle = "#181825"
+crust = "#11111b"
