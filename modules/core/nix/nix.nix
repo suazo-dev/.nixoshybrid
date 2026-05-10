@@ -7,9 +7,8 @@ in {
     auto-optimise-store = true;
     warn-dirty = false;
   };
-}
-// (if isDarwin then {
-  nix.gc = {
+
+  nix.gc = if isDarwin then {
     automatic = true;
     interval = {
       Weekday = 0;
@@ -17,11 +16,9 @@ in {
       Minute = 15;
     };
     options = "--delete-older-than 14d";
-  };
-} else {
-  nix.gc = {
+  } else {
     automatic = true;
     dates = "weekly";
     options = "--delete-older-than 14d";
   };
-})
+}

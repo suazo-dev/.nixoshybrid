@@ -84,7 +84,7 @@
 
       wg.storage = {
         ip = "10.2.0.1";
-        publicKey = "<generate-storage-keypair-on-papa>";
+        publicKey = "tc096iNfSkkOSwkSNgpJve50Zn91o5cb/K4hsGmxB0s=";
         secretName = "core-storage";
       };
 
@@ -120,7 +120,7 @@
 
       wg.storage = {
         ip = "10.2.0.2";
-        publicKey = "<generate-wg-keys-for-mama>";
+        publicKey = "AxqH2DCTlerWkJsTntUGlFA8OSnxR2Iv5FFyQux51TQ=";
         secretName = "storage-key";
         listenPort = 51822;
         endpoint = "192.168.8.10:51822";

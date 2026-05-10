@@ -8,8 +8,8 @@ let
 in {
   programs.zsh.enable = true;
   users.users.${spec.user}.shell = pkgs.zsh;
-}
-// lib.optionalAttrs (!isDarwin) {
+
+} // lib.optionalAttrs (!isDarwin) {
   environment.systemPackages = lib.mkIf alwaysOn [ pkgs.wakeonlan pkgs.ethtool ];
 
   systemd.targets = lib.mkIf alwaysOn {
