@@ -62,7 +62,7 @@
 
       wg.core = {
         ip = "10.0.0.1";
-        publicKey = "RyloTPHjCXGLn36WPczGPqnHJsjZrCjlog16AJyerGI=";
+        publicKey = "wkQE+ob7KUFxcX44JEY1Lt/Ih3ujp1qZeQ3B1h5vKFA=";
         secretName = "gateway-core";
       };
 
