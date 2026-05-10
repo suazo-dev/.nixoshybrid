@@ -78,7 +78,7 @@
     papa = {
       wg.core = {
         ip = "10.0.0.2";
-        publicKey = "9nbLPKBbdKz7AHIAPsO3zI5L4xcPNfWtNRrIxWn7AV4=";
+        publicKey = "QWe9wAEzY7kZdXsF5cF4sRSToFlslXfiPNaS6TZZPE4=";
         secretName = "papa";
       };
 
