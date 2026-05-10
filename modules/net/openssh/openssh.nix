@@ -3,8 +3,9 @@ let
   isDarwin = lib.hasSuffix "-darwin" spec.system;
 in {
   services.openssh.enable = true;
-
-  services.openssh.settings = lib.mkIf (!isDarwin) {
+}
+// lib.optionalAttrs (!isDarwin) {
+  services.openssh.settings = {
     PermitRootLogin = "no";
     PasswordAuthentication = false;
     KbdInteractiveAuthentication = false;
@@ -14,8 +15,9 @@ in {
     ClientAliveInterval = 30;
     ClientAliveCountMax = 6;
   };
-
-  services.openssh.extraConfig = lib.mkIf isDarwin ''
+}
+// lib.optionalAttrs isDarwin {
+  services.openssh.extraConfig = ''
     PermitRootLogin no
     PasswordAuthentication no
     KbdInteractiveAuthentication no

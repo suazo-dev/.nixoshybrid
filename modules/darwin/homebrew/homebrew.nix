@@ -9,7 +9,7 @@ in {
 
   nix-homebrew = {
     enable = true;
-    enableRosetta = true;
+    enableRosetta = false;
     user = spec.user;
     autoMigrate = true;
     mutableTaps = false;
