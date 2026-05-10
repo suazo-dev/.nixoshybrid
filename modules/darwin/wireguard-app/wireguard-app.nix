@@ -36,5 +36,6 @@ PersistentKeepalive = 25
 EOF
       '';
 in {
-  environment.systemPackages = [ pkgs.wireguard-tools ] ++ map mkTemplate hubNetworks;
+  homebrew.casks = [ "wireguard-tools" ];
+  environment.systemPackages = map mkTemplate hubNetworks;
 }
