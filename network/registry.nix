@@ -77,7 +77,7 @@
 
     papa = {
       wg.core = {
-        ip = "10.0.0.2";
+        ip = "10.0.0.3";
         publicKey = "QWe9wAEzY7kZdXsF5cF4sRSToFlslXfiPNaS6TZZPE4=";
         secretName = "papa";
       };
@@ -116,6 +116,12 @@
         ip = "192.168.8.10";
         interface = "eno1";
         wakeMac = "c4:65:16:b6:8c:3c";
+      };
+
+      wg.core = {
+        ip = "10.0.0.2";
+        publicKey = "9nbLPKBbdKz7AHIAPsO3zI5L4xcPNfWtNRrIxWn7AV4=";
+        secretName = "mama";
       };
 
       wg.storage = {

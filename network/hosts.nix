@@ -15,7 +15,16 @@ let
         sharedNetworks = builtins.filter (n: builtins.elem n toNetworks) fromNetworks;
         isGateway = fromName == registry.gateway.machineName;
         gatewayReach = if isGateway then toNetworks else [ ];
-        reachableNetworks = lib.unique (sharedNetworks ++ gatewayReach);
+
+        # Networks reachable via extraAllowedIPs routing through the gateway
+        routedNetworks = lib.concatMap (fromNet:
+          let extraIPs = (registry.networks.${fromNet}).extraAllowedIPs or [];
+          in builtins.filter (toNet:
+            builtins.elem (registry.networks.${toNet}).subnet extraIPs
+          ) toNetworks
+        ) fromNetworks;
+
+        reachableNetworks = lib.unique (sharedNetworks ++ gatewayReach ++ routedNetworks);
         toIsGateway = toName == registry.gateway.machineName;
         allReachable = if toIsGateway then fromNetworks else reachableNetworks;
       in
