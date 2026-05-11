@@ -282,6 +282,7 @@ if [[ "${ZSH_HOST_PORTAL:-0}" == "1" ]]; then
   alias tinyon='wakeonlan 00:23:24:73:05:91'
   alias sshtiny='ssh suazo@tiny'
   alias sshpapa="ssh -t suazo@papa 'tmux new -As main'"
+  alias sshmama="ssh -t suazo@mama 'tmux new -As main'"
 fi
 
 # Fuzzy helpers
