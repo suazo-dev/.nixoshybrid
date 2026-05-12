@@ -286,6 +286,7 @@ if [[ "${ZSH_HOST_PORTAL:-0}" == "1" ]]; then
   alias sshtiny='ssh suazo@tiny'
   alias sshpapa="TERM=xterm-256color ssh -t suazo@papa 'LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 tmux -u new -As main'"
   alias sshmama="TERM=xterm-256color ssh -t suazo@mama 'LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 tmux -u new -As main'"
+  alias vncpapa='remmina -c vnc://suazo@papa'
 fi
 
 # Fuzzy helpers

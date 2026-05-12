@@ -7,6 +7,7 @@
   ];
 
   linuxModules = [
+    "remmina"
     "pipewire"
     "bluetooth"
     "fuzzel"
