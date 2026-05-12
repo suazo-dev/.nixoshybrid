@@ -17,7 +17,7 @@ in
 {
   environment.systemPackages =
     [ pkgs.zsh ]
-    ++ lib.optionals (!isDarwin) [ pkgs.ghostty.terminfo ]
+    ++ [ pkgs.ghostty.terminfo ]
     ++ lib.optionals (hasRole "portal") [ pkgs.wakeonlan ];
 
   environment.variables = {
