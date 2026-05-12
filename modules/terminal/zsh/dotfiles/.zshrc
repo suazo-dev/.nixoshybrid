@@ -6,6 +6,9 @@ export PATH="$GOPATH/bin:$HOME/.cargo/bin:$HOME/.opencode/bin:/home/suazo/.openc
 typeset -U path PATH
 
 # Defaults
+export LANG="en_US.UTF-8"
+export LC_ALL="en_US.UTF-8"
+export COLORTERM=truecolor
 export EDITOR="nvim"
 export VISUAL="nvim"
 export GIT_EDITOR="nvim"
