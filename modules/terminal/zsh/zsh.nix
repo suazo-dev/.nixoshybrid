@@ -24,6 +24,8 @@ in
     EDITOR = "nvim";
     VISUAL = "nvim";
     NIXCFG_ROOT = spec.repoRoot;
+    LANG = "en_US.UTF-8";
+    LC_ALL = "en_US.UTF-8";
   };
 
   home-manager.users.${spec.user} = { ... }: {
