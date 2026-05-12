@@ -6,9 +6,6 @@ export PATH="$GOPATH/bin:$HOME/.cargo/bin:$HOME/.opencode/bin:/home/suazo/.openc
 typeset -U path PATH
 
 # Defaults
-export LANG="en_US.UTF-8"
-export LC_ALL="en_US.UTF-8"
-export COLORTERM=truecolor
 export EDITOR="nvim"
 export VISUAL="nvim"
 export GIT_EDITOR="nvim"
@@ -287,8 +284,8 @@ alias wg1off='wgoff wg1'
 if [[ "${ZSH_HOST_PORTAL:-0}" == "1" ]]; then
   alias tinyon='wakeonlan 00:23:24:73:05:91'
   alias sshtiny='ssh suazo@tiny'
-  alias sshpapa="TERM=xterm-256color ssh -t suazo@papa 'tmux new -As main'"
-  alias sshmama="TERM=xterm-256color ssh -t suazo@mama 'tmux new -As main'"
+  alias sshpapa="TERM=xterm-256color ssh -t suazo@papa 'LANG=en_US.UTF-8 tmux new -As main'"
+  alias sshmama="TERM=xterm-256color ssh -t suazo@mama 'LANG=en_US.UTF-8 tmux new -As main'"
 fi
 
 # Fuzzy helpers
