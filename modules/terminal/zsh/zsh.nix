@@ -15,6 +15,8 @@ let
     (hosts.hostsFor machineName);
 in
 {
+  programs.zsh.enableCompletion = false;
+
   environment.systemPackages =
     [ pkgs.zsh ]
     ++ lib.optionals (!isDarwin) [ pkgs.ghostty.terminfo ]
