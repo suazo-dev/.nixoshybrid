@@ -109,6 +109,9 @@ zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'eza -la --color=always --ic
 # Completion init
 zinit light zsh-users/zsh-completions
 
+# Filter out missing completion dirs (e.g. homebrew on nix-managed macs)
+fpath=(${fpath:#/opt/homebrew/share/zsh/site-functions})
+
 if [[ "${ZSH_HOST_HEADLESS:-0}" == "1" ]]; then
   compinit -C
 else
@@ -281,8 +284,8 @@ alias wg1off='wgoff wg1'
 if [[ "${ZSH_HOST_PORTAL:-0}" == "1" ]]; then
   alias tinyon='wakeonlan 00:23:24:73:05:91'
   alias sshtiny='ssh suazo@tiny'
-  alias sshpapa="ssh -t suazo@papa 'tmux new -As main'"
-  alias sshmama="ssh -t suazo@mama 'tmux new -As main'"
+  alias sshpapa="TERM=xterm-256color ssh -t suazo@papa 'tmux new -As main'"
+  alias sshmama="TERM=xterm-256color ssh -t suazo@mama 'tmux new -As main'"
 fi
 
 # Fuzzy helpers
