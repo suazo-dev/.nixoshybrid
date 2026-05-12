@@ -90,9 +90,13 @@
       {
         users.users.${spec.user}.home = homeDirectory;
 
-        home-manager.users.${spec.user} = lib.mkIf (sshAuthorizedKeys != [ ]) ({ ... }: {
-          home.file.".ssh/authorized_keys".text = lib.concatStringsSep "\n" sshAuthorizedKeys + "\n";
-        });
+        system.activationScripts.postActivation.text = lib.mkIf (sshAuthorizedKeys != [ ]) ''
+          mkdir -p ${homeDirectory}/.ssh
+          printf '%s\n' ${lib.concatStringsSep " " (map (k: "'${k}'") sshAuthorizedKeys)} > ${homeDirectory}/.ssh/authorized_keys
+          chown ${spec.user} ${homeDirectory}/.ssh ${homeDirectory}/.ssh/authorized_keys
+          chmod 700 ${homeDirectory}/.ssh
+          chmod 600 ${homeDirectory}/.ssh/authorized_keys
+        '';
       }
     else {
       users.mutableUsers = spec.mutableUsers;
