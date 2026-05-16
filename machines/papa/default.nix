@@ -1,23 +1,21 @@
 {
+  hostName = "papa";
+  nodeName = "core";
+  instanceName = "alpha";
   system = "aarch64-darwin";
-  roles = [ "core" ];
   user = "suazo";
   stateVersion = "6";
   homeStateVersion = "25.11";
   hardware = "hardware-configuration.nix";
 
-  features = [
-    "core/core"
-    "terminal/terminal"
-    "gui/gui"
-    "dev/dev"
-    "cyber/cyber"
-    "net/net"
-  ];
+  wgPublicKeys = {
+    core = "QWe9wAEzY7kZdXsF5cF4sRSToFlslXfiPNaS6TZZPE4=";
+    storage = "tc096iNfSkkOSwkSNgpJve50Zn91o5cb/K4hsGmxB0s=";
+  };
+
+  sshPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKwZUBkhznVjOcbgGAfQUKYOQJtNjxnTT3LDM2KMgcMB";
 
   extraModules = [ ];
-
-  allowedUnfree = [ "claude-code" ];
-
+  allowedUnfree = [ ];
   mutableUsers = true;
 }

@@ -4,7 +4,6 @@
 let
   registry = import ../../../network/registry.nix;
   hasRole = role: builtins.elem role spec.roles;
-  isGateway = machineName == registry.gateway.machineName;
   storageCfg = spec.facts.storage or {};
   nfsEnabled = storageCfg.nfs.enable or false;
 
@@ -21,8 +20,13 @@ let
   hubNetworks = builtins.filter (n:
     (registry.networks.${n}.type or "hub") != "p2p"
   ) activeNetworks;
+  p2pNetworks = builtins.filter (n:
+    (registry.networks.${n}.type or "hub") == "p2p"
+  ) activeNetworks;
   hubInterfaces = map (n: "wg-${n}") hubNetworks;
+  p2pInterfaces = map (n: "wg-${n}") p2pNetworks;
   hubInterfaceSet = lib.concatStringsSep ", " (map (n: "\"${n}\"") hubInterfaces);
+  p2pInterfaceSet = lib.concatStringsSep ", " (map (n: "\"${n}\"") p2pInterfaces);
 
   # Full-tunnel networks get masquerade
   fullTunnelNetworks = builtins.filter (n:
@@ -129,13 +133,12 @@ in {
             type filter hook input priority 0; policy drop;
             iifname "lo" accept
             ct state established,related accept
-            ${lib.concatStringsSep "\n            " (map (iface:
-              "iifname \"${iface}\" accept"
-            ) myWgInterfaces)}
+            ${lib.optionalString (hubInterfaces != [ ]) "iifname { ${hubInterfaceSet} } accept"}
             ${lib.optionalString nfsEnabled (lib.concatStringsSep "\n            " (lib.concatMap (ip: [
               "ip saddr ${ip} tcp dport 2049 accept"
               "ip saddr ${ip} udp dport 2049 accept"
             ]) p2pPeerWgIps))}
+            ${lib.optionalString (p2pInterfaces != [ ]) "iifname { ${p2pInterfaceSet} } ip protocol icmp accept"}
             ip protocol icmp accept
           }
 

@@ -3,41 +3,45 @@ let
   registry = import ./registry.nix;
   allMachines = registry.machines;
 
-  resolveIp = fromName: toName:
-    if !(builtins.hasAttr fromName allMachines) || !(builtins.hasAttr toName allMachines) then
+  sortNetworks = networks:
+    builtins.sort (a: b: (registry.networks.${a}.hostPriority or 0) > (registry.networks.${b}.hostPriority or 0)) networks;
+
+  resolveIp = fromMachineName: toMachineName:
+    if !(builtins.hasAttr fromMachineName allMachines) || !(builtins.hasAttr toMachineName allMachines) then
       null
     else
       let
-        from = allMachines.${fromName};
-        to = allMachines.${toName};
+        from = allMachines.${fromMachineName};
+        to = allMachines.${toMachineName};
         fromNetworks = builtins.attrNames (from.wg or { });
         toNetworks = builtins.attrNames (to.wg or { });
         sharedNetworks = builtins.filter (n: builtins.elem n toNetworks) fromNetworks;
-        isGateway = fromName == registry.gateway.machineName;
-        gatewayReach = if isGateway then toNetworks else [ ];
-
-        # Networks reachable via extraAllowedIPs routing through the gateway
+        gatewayReach = if from.nodeName == "gateway" then toNetworks else [ ];
         routedNetworks = lib.concatMap (fromNet:
-          let extraIPs = (registry.networks.${fromNet}).extraAllowedIPs or [];
-          in builtins.filter (toNet:
-            builtins.elem (registry.networks.${toNet}).subnet extraIPs
-          ) toNetworks
+          let extraIPs = registry.networks.${fromNet}.extraAllowedIPs or [ ];
+          in builtins.filter (toNet: builtins.elem registry.networks.${toNet}.subnet extraIPs) toNetworks
         ) fromNetworks;
-
-        reachableNetworks = lib.unique (sharedNetworks ++ gatewayReach ++ routedNetworks);
-        toIsGateway = toName == registry.gateway.machineName;
-        allReachable = if toIsGateway then fromNetworks else reachableNetworks;
+        reachableNetworks = sortNetworks (builtins.foldl' (acc: item: if builtins.elem item acc then acc else acc ++ [ item ]) [ ] (sharedNetworks ++ gatewayReach ++ routedNetworks));
+        allReachable = if to.nodeName == "gateway" then sortNetworks fromNetworks else reachableNetworks;
       in
         if allReachable != [ ] then
-          (to.wg.${builtins.head allReachable}).ip
+          to.wg.${builtins.head allReachable}.ip
         else
           to.lan.ip or null;
 
   hostsFor = machineName:
     let
-      otherNames = builtins.filter (name: name != machineName) (builtins.attrNames allMachines);
+      otherMachineNames = builtins.filter (name: name != machineName) (builtins.attrNames allMachines);
     in
-      lib.filterAttrs (_: value: value != null) (lib.genAttrs otherNames (name: resolveIp machineName name));
+      lib.filterAttrs (_: value: value != null) (
+        builtins.listToAttrs (map (otherName:
+          let machine = allMachines.${otherName};
+          in {
+            name = machine.hostName;
+            value = resolveIp machineName otherName;
+          }
+        ) otherMachineNames)
+      );
 
   hostsFileFor = machineName:
     lib.concatStringsSep "\n" (lib.mapAttrsToList (name: ip: "${ip} ${name}") (hostsFor machineName));

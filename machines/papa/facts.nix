@@ -11,9 +11,4 @@
   };
 
   sync.folder = "/Users/suazo/Sync";
-
-  storage.nfs = {
-    mountPoint = "/Volumes/storage";
-    remotePath = "/home/suazo/Sync";
-  };
 }

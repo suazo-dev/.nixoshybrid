@@ -7,18 +7,19 @@ let
   mountCfg = spec.facts.storage.nfs or {};
   myEntry = registry.machines.${machineName};
 
-  # Find storage peers: machines on a shared p2p WG network
+  # Find storage peers: roles with the storage capability on a shared p2p WG network.
   myP2PNetworks = builtins.filter (netName:
     builtins.hasAttr netName registry.networks
     && (registry.networks.${netName}.type or "hub") == "p2p"
   ) (builtins.attrNames (myEntry.wg or {}));
 
-  storagePeers = lib.concatMap (netName:
+  storagePeers = lib.unique (lib.concatMap (netName:
     builtins.filter (name:
       name != machineName
       && builtins.hasAttr netName ((registry.machines.${name}).wg or {})
+      && builtins.elem "storage" (registry.machines.${name}.roles or [ ])
     ) (builtins.attrNames registry.machines)
-  ) myP2PNetworks;
+  ) myP2PNetworks);
 
   # Use the first storage peer's WG IP as the remote host
   storageTarget = if storagePeers != [] then builtins.head storagePeers else null;
@@ -31,8 +32,14 @@ let
   else null;
 
   remoteHost = if storageTargetNet != null then storageTargetNet.ip else "";
-  remotePath = mountCfg.remotePath or spec.facts.sync.folder or "/home/${spec.user}/Sync";
-  mountPoint = mountCfg.mountPoint or "/Volumes/storage";
+  remotePath =
+    if mountCfg.remotePath or null != null then
+      mountCfg.remotePath
+    else if spec.facts.sync.folder or null != null then
+      spec.facts.sync.folder
+    else
+      "/home/${spec.user}/Sync";
+  mountPoint = if mountCfg.mountPoint or null != null then mountCfg.mountPoint else "/Volumes/storage";
 
   mountStorageScript = pkgs.writeShellScriptBin "mount-storage" ''
     set -euo pipefail
@@ -69,6 +76,11 @@ let
     sudo /sbin/umount "$mount_point"
   '';
 in {
+  assertions = lib.optional (storagePeers != [ ]) {
+    assertion = builtins.length storagePeers == 1;
+    message = "Darwin storage mount for machine '${machineName}' expects exactly one storage peer.";
+  };
+
   environment.systemPackages = [
     mountStorageScript
     umountStorageScript

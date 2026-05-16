@@ -9,12 +9,12 @@
   ...
 }: let
   registry = import ../../../network/registry.nix;
+  myEntry = registry.machines.${machineName};
   gwName = registry.gateway.machineName;
   gwEndpoint = registry.gateway.endpoint;
-  myEntry = registry.machines.${machineName};
-  gwEntry = registry.machines.${gwName};
-  hasRole = role: builtins.elem role spec.roles;
-  isGateway = machineName == gwName;
+  allMachines = registry.machines;
+  gwEntry = allMachines.${gwName};
+  isGateway = spec.nodeName == "gateway";
 
   subnetMask = subnet: builtins.elemAt (lib.splitString "/" subnet) 1;
 
@@ -46,11 +46,11 @@
     let
       peerNames = builtins.filter (name:
         name != machineName
-        && builtins.hasAttr netName ((registry.machines.${name}).wg or {})
-      ) (builtins.attrNames registry.machines);
+        && builtins.hasAttr netName ((allMachines.${name}).wg or {})
+      ) (builtins.attrNames allMachines);
 
       peers = map (name:
-        let peerNet = registry.machines.${name}.wg.${netName};
+        let peerNet = allMachines.${name}.wg.${netName};
         in {
           publicKey = peerNet.publicKey;
           allowedIPs = [ "${peerNet.ip}/32" ];
@@ -69,12 +69,12 @@
     let
       peerNames = builtins.filter (name:
         name != machineName
-        && builtins.hasAttr netName ((registry.machines.${name}).wg or {})
-      ) (builtins.attrNames registry.machines);
+        && builtins.hasAttr netName ((allMachines.${name}).wg or {})
+      ) (builtins.attrNames allMachines);
 
       peers = map (name:
         let
-          peerNet = registry.machines.${name}.wg.${netName};
+          peerNet = allMachines.${name}.wg.${netName};
           # If the peer has an endpoint, use it (they're the listener)
           peerHasEndpoint = peerNet ? endpoint;
         in {

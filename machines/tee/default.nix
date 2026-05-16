@@ -1,25 +1,20 @@
 {
-  roles = [ "portal" ];
+  hostName = "tee";
+  nodeName = "portal";
+  instanceName = "bravo";
   user = "suazo";
+  system = "x86_64-linux";
   stateVersion = "25.11";
   homeStateVersion = "25.11";
   hardware = "hardware-configuration.nix";
 
-  features = [
-    "core/core"
-    "terminal/terminal"
-    "gui/gui"
-    "dev/dev"
-    "cyber/cyber"
-    "net/net"
-  ];
+  wgPublicKeys = {
+    portal = "ZYVWprVyyBZ3twqlG0Oy4M4yFOd1k+rg2JvDZZgS6Bc=";
+  };
 
-  extraModules = [
-    "networkmanager"
-    "iwd"
-  ];
+  sshPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIkwZUBkhznVjOcbgGAfQUKYOQJtNjxnTT3LDM2KMgcMB";
 
-  allowedUnfree = [ "claude-code" ];
-
+  extraModules = [ ];
+  allowedUnfree = [ ];
   mutableUsers = true;
 }

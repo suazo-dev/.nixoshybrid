@@ -20,11 +20,4 @@
   };
 
   sync.folder = "/home/suazo/Sync";
-
-  storage.nfs = {
-    enable = false;
-    exportPath = "/home/suazo/Sync";
-    remotePath = "/home/suazo/Sync";
-    mountPoint = "/Volumes/storage";
-  };
 }

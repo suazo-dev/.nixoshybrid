@@ -1,6 +1,6 @@
 { spec, ... }:
 let
-  syncFolder = spec.facts.sync.folder or "/home/${spec.user}/Sync";
+  syncFolder = if spec.facts.sync.folder or null != null then spec.facts.sync.folder else "/home/${spec.user}/Sync";
 in
 {
   services.syncthing = {

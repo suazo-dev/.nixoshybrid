@@ -1,10 +1,10 @@
 {
   allowedKeys = [
-    "system"
     "hostName"
+    "system"
+    "nodeName"
+    "instanceName"
     "user"
-    "roles"
-    "features"
     "hardware"
     "stateVersion"
     "homeStateVersion"
@@ -12,13 +12,17 @@
     "extraGroups"
     "allowedUnfree"
     "mutableUsers"
+    "lan"
+    "wgPublicKeys"
+    "sshPublicKey"
   ];
 
   requiredKeys = [
-    "roles"
+    "hostName"
+    "nodeName"
+    "instanceName"
     "stateVersion"
     "homeStateVersion"
     "hardware"
-    "features"
   ];
 }

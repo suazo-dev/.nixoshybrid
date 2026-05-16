@@ -1,83 +1,114 @@
 {
   inputs,
   lib,
-}: machineName: let
+}: machineName:
+let
   root = ../.;
   defaults = import ./defaults.nix;
-  schema = import ./schema.nix {inherit lib;};
+  schema = import ./schema.nix { inherit lib; };
   registry = import ../network/registry.nix;
+  base = import ../nodes/base.nix;
 
   machinePath = root + "/machines/${machineName}/default.nix";
-  factsPath = root + "/machines/${machineName}/facts.nix";
+  machineFactsPath = root + "/machines/${machineName}/facts.nix";
 
   rawMachine = import machinePath;
   checkedMachine = schema.validateMachine machineName rawMachine;
 
-  rawFacts =
-    if builtins.pathExists factsPath
-    then import factsPath
-    else {};
-  facts = schema.validateFacts machineName rawFacts;
+  nodeName = checkedMachine.nodeName;
+  instanceName = checkedMachine.instanceName;
+  nodePath = root + "/nodes/${nodeName}.nix";
+  nodeSpec = schema.validateNode nodeName (import nodePath);
+
+  machineFacts =
+    if builtins.pathExists machineFactsPath then
+      import machineFactsPath
+    else
+      { };
 
   machineSystem = checkedMachine.system or defaults.system;
   isDarwin = lib.hasSuffix "-darwin" machineSystem;
-  defaultFeatures = if isDarwin then [ ] else (defaults.features or [ ]);
-  defaultExtraGroups = if isDarwin then [ ] else (defaults.extraGroups or [ ]);
-  hostName = checkedMachine.hostName or machineName;
+  systemClass = if isDarwin then "darwin" else "linux";
 
-  baseSpec =
-    defaults
-    // checkedMachine
-    // {
-      inherit hostName;
-      features =
-        lib.unique (defaultFeatures ++ (checkedMachine.features or []));
-      extraModules = checkedMachine.extraModules or [];
-      extraGroups =
-        lib.unique (defaultExtraGroups ++ (checkedMachine.extraGroups or []));
-      allowedUnfree =
-        lib.unique ((defaults.allowedUnfree or []) ++ (checkedMachine.allowedUnfree or []));
-      roles = lib.unique ((defaults.roles or []) ++ (checkedMachine.roles or []));
-      mutableUsers = checkedMachine.mutableUsers or defaults.mutableUsers;
-      system = machineSystem;
-      facts = facts;
+  _systemCheck =
+    if builtins.elem systemClass nodeSpec.supportedSystems then
+      null
+    else
+      throw "Machine '${machineName}' (${machineSystem}) cannot use node '${nodeName}' (${lib.concatStringsSep ", " nodeSpec.supportedSystems})";
+
+  registryMachine = registry.machines.${machineName} or (throw "Registry is missing machine '${machineName}'");
+
+  validatedFacts = schema.validateFacts machineName (lib.recursiveUpdate machineFacts (nodeSpec.facts or { }));
+
+  facts = lib.recursiveUpdate validatedFacts {
+    network = {
+      lanInterface = registryMachine.lan.interface or null;
+      wakeMac = registryMachine.lan.wakeMac or null;
     };
+  };
+
+  defaultExtraGroups = if isDarwin then [ ] else (defaults.extraGroups or [ ]);
+
+  # Base modules minus node removals
+  nodeRemove = nodeSpec.remove or [ ];
+  nodeRemoveLinux = nodeSpec.removeLinux or [ ];
+  nodeRemoveDarwin = nodeSpec.removeDarwin or [ ];
+
+  baseModules = builtins.filter (m: !(builtins.elem m nodeRemove)) (base.modules or [ ]);
+  baseLinuxModules = builtins.filter (m:
+    !(builtins.elem m nodeRemove) && !(builtins.elem m nodeRemoveLinux)
+  ) (base.linuxModules or [ ]);
+  baseDarwinModules = builtins.filter (m:
+    !(builtins.elem m nodeRemove) && !(builtins.elem m nodeRemoveDarwin)
+  ) (base.darwinModules or [ ]);
+
+  moduleNames = lib.unique (
+    baseModules
+    ++ (if isDarwin then baseDarwinModules else baseLinuxModules)
+    ++ (checkedMachine.extraModules or [ ])
+  );
+
+  baseSpec = defaults // checkedMachine // {
+    hostName = checkedMachine.hostName;
+    roles = registryMachine.roles or [ nodeName ];
+    allowedUnfree = lib.unique (
+      (defaults.allowedUnfree or [ ])
+      ++ (checkedMachine.allowedUnfree or [ ])
+      ++ (base.allowedUnfree or [ ])
+    );
+    extraGroups = lib.unique (
+      defaultExtraGroups
+      ++ (checkedMachine.extraGroups or [ ])
+    );
+    mutableUsers =
+      if checkedMachine ? mutableUsers then
+        checkedMachine.mutableUsers
+      else
+        defaults.mutableUsers;
+    system = machineSystem;
+    facts = facts;
+    machineName = machineName;
+    nodeName = nodeName;
+    instanceName = instanceName;
+    secretFileName = registryMachine.secretFileName;
+    modules = moduleNames;
+  };
+
   homeDirectory = if isDarwin then "/Users/${baseSpec.user}" else "/home/${baseSpec.user}";
   repoRoot = "${homeDirectory}/${defaults.repoDirName or ".nixoshybrid"}";
   spec = baseSpec // {
     inherit homeDirectory repoRoot;
   };
 
-  # Resolve SSH keys from registry
-  registryMachine = registry.machines.${machineName} or {};
-  sshKeyNames = registryMachine.sshAuthorizedKeys or [];
-  sshAuthorizedKeys = map (name: registry.sshKeys.${name}) sshKeyNames;
-
-  featureResolver = import ./resolve/features.nix {
-    inherit lib schema machineName;
-    root = root;
-  };
+  sshAuthorizedKeys = map (name: registry.sshKeys.${name}) (registryMachine.sshAuthorizedKeys or [ ]);
 
   moduleResolver = import ./resolve/modules.nix {
     root = root;
     inherit machineName;
   };
 
-  resolvedFeatures = featureResolver.resolve spec.features;
-
-  moduleNames = lib.unique (
-    lib.concatLists (
-      map
-      (f:
-        (f.modules or [])
-        ++ (if isDarwin then (f.darwinModules or []) else (f.linuxModules or [])))
-      resolvedFeatures.features
-    )
-    ++ spec.extraModules
-  );
-
-  modulePaths = moduleResolver.paths moduleNames;
-  hardwarePath = root + "/machines/${machineName}/${spec.hardware}";
+  modulePaths = moduleResolver.paths spec.modules;
+  hardwarePath = root + "/machines/${machineName}/${checkedMachine.hardware}";
 
   hostsModule =
     if isDarwin then
@@ -108,33 +139,31 @@
       };
     };
 
-  hostCoreModule =
-    {
-      home-manager.useGlobalPkgs = true;
-      home-manager.useUserPackages = true;
-      home-manager.backupFileExtension = "backup";
-      home-manager.extraSpecialArgs = {
-        inherit spec machineName inputs;
-      };
+  hostCoreModule = {
+    home-manager.useGlobalPkgs = true;
+    home-manager.useUserPackages = true;
+    home-manager.backupFileExtension = "backup";
+    home-manager.extraSpecialArgs = {
+      inherit spec machineName inputs;
+    };
 
-      home-manager.users.${spec.user} = {...}: {
-        home.username = spec.user;
-        home.homeDirectory = homeDirectory;
-        home.stateVersion = spec.homeStateVersion;
-      };
-    }
-    // (if isDarwin then {
-      networking.hostName = hostName;
-      networking.computerName = hostName;
-      networking.localHostName = hostName;
-      system.primaryUser = spec.user;
-      system.stateVersion = builtins.fromJSON spec.stateVersion;
-    } else {
-      networking.hostName = hostName;
-      system.stateVersion = spec.stateVersion;
-    });
+    home-manager.users.${spec.user} = { ... }: {
+      home.username = spec.user;
+      home.homeDirectory = homeDirectory;
+      home.stateVersion = spec.homeStateVersion;
+    };
+  } // (if isDarwin then {
+    networking.hostName = spec.hostName;
+    networking.computerName = spec.hostName;
+    networking.localHostName = spec.hostName;
+    system.primaryUser = spec.user;
+    system.stateVersion = builtins.fromJSON spec.stateVersion;
+  } else {
+    networking.hostName = spec.hostName;
+    system.stateVersion = spec.stateVersion;
+  });
 
-  unfreeModule = import ./resolve/unfree.nix {inherit lib spec;};
+  unfreeModule = import ./resolve/unfree.nix { inherit lib spec; };
 in
   (if isDarwin then inputs.nix-darwin.lib.darwinSystem else inputs.nixpkgs.lib.nixosSystem) {
     system = spec.system;

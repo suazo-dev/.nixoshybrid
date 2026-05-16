@@ -5,7 +5,13 @@ let
   registry = import ../../../network/registry.nix;
   nfsCfg = spec.facts.storage.nfs or {};
   enabled = nfsCfg.enable or false;
-  exportPath = nfsCfg.exportPath or spec.facts.sync.folder or "/home/${spec.user}/Sync";
+  exportPath =
+    if nfsCfg.exportPath or null != null then
+      nfsCfg.exportPath
+    else if spec.facts.sync.folder or null != null then
+      spec.facts.sync.folder
+    else
+      "/home/${spec.user}/Sync";
   myEntry = registry.machines.${machineName};
 
   # Find peers on shared p2p WG networks — those get NFS access
@@ -29,7 +35,7 @@ let
 in {
   assertions = lib.optional enabled {
     assertion = exportClients != [];
-    message = "NFS enabled on '${machineName}' but no p2p WG peers found in registry.";
+    message = "NFS enabled on machine '${machineName}' but no p2p WG peers found in registry.";
   };
 
   services.nfs.server = lib.mkIf enabled {

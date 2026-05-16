@@ -1,3 +1,0 @@
-{
-  linuxModules = [ "storage/nfs-server" ];
-}
