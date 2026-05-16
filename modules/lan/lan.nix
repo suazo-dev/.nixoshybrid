@@ -1,6 +1,6 @@
 { lib, machineName, spec, ... }:
 let
-  registry = import ../../../network/registry.nix;
+  registry = import ../../network/registry.nix;
   machineEntry = registry.machines.${machineName} or { };
   lanCfg = machineEntry.lan or { };
   hasStaticLan = lanCfg ? ip;

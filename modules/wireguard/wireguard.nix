@@ -8,7 +8,7 @@
   spec,
   ...
 }: let
-  registry = import ../../../network/registry.nix;
+  registry = import ../../network/registry.nix;
   myEntry = registry.machines.${machineName};
   gwName = registry.gateway.machineName;
   gwEndpoint = registry.gateway.endpoint;

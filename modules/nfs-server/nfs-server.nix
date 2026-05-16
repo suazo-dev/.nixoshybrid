@@ -2,7 +2,7 @@
 # Allows access from peers on shared p2p WG networks.
 { lib, machineName, spec, ... }:
 let
-  registry = import ../../../network/registry.nix;
+  registry = import ../../network/registry.nix;
   nfsCfg = spec.facts.storage.nfs or {};
   enabled = nfsCfg.enable or false;
   exportPath =

@@ -3,7 +3,7 @@
 # that have the "storage" role.
 { pkgs, lib, machineName, spec, ... }:
 let
-  registry = import ../../../network/registry.nix;
+  registry = import ../../network/registry.nix;
   mountCfg = spec.facts.storage.nfs or {};
   myEntry = registry.machines.${machineName};
 

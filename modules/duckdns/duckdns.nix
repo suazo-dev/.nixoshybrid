@@ -2,7 +2,7 @@
 # Only activates on the gateway machine.
 { pkgs, lib, spec, machineName, config, ... }:
 let
-  registry = import ../../../network/registry.nix;
+  registry = import ../../network/registry.nix;
   isGateway = machineName == registry.gateway.machineName;
   duckdnsDomain = "${registry.gateway.duckdnsDomain}.duckdns.org";
 

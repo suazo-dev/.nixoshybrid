@@ -2,7 +2,7 @@
 # Interface names and IPs derived from network/registry.nix.
 { lib, machineName, spec, ... }:
 let
-  registry = import ../../../network/registry.nix;
+  registry = import ../../network/registry.nix;
   hasRole = role: builtins.elem role spec.roles;
   storageCfg = spec.facts.storage or {};
   nfsEnabled = storageCfg.nfs.enable or false;

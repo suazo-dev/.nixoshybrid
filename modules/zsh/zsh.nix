@@ -2,7 +2,7 @@
 let
   hasRole = role: builtins.elem role spec.roles;
   isDarwin = lib.hasSuffix "-darwin" spec.system;
-  hosts = import ../../../network/hosts.nix { inherit lib; };
+  hosts = import ../../network/hosts.nix { inherit lib; };
   sshKeepalive = {
     user = spec.user;
     serverAliveInterval = 30;

@@ -1,7 +1,7 @@
 # Darwin WireGuard app — registry-driven template generator.
 { pkgs, machineName, ... }:
 let
-  registry = import ../../../network/registry.nix;
+  registry = import ../../network/registry.nix;
   allMachines = registry.machines;
   myEntry = allMachines.${machineName};
   gwName = registry.gateway.machineName;

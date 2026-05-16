@@ -1,6 +1,6 @@
 { lib, machineName, spec, ... }:
 let
-  registry = import ../../../network/registry.nix;
+  registry = import ../../network/registry.nix;
   allMachines = registry.machines;
   adminNetworks = builtins.filter (netName:
     (registry.networks.${netName}.type or "hub") != "p2p"
