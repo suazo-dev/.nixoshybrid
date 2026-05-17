@@ -8,6 +8,6 @@ in
     user = spec.user;
     dataDir = syncFolder;
     configDir = "/home/${spec.user}/.config/syncthing";
-    openDefaultPorts = true;
+    openDefaultPorts = false;
   };
 }

@@ -62,8 +62,8 @@ in {
     "net.ipv6.conf.all.forwarding" = 1;
   };
 
-  networking.firewall.enable = hasRole "portal";
-  networking.nftables.enable = hasRole "gateway" || hasRole "core" || hasRole "storage";
+  networking.firewall.enable = false;
+  networking.nftables.enable = true;
 
   networking.nftables.tables = lib.mkMerge [
 
@@ -78,7 +78,7 @@ in {
             iifname { ${hubInterfaceSet} } accept
             ip protocol icmp accept
             udp dport { ${wgPorts} } accept
-            tcp dport 22 accept
+            iifname { ${hubInterfaceSet} } tcp dport 22 accept
           }
 
           chain forward {
@@ -139,6 +139,31 @@ in {
               "ip saddr ${ip} udp dport 2049 accept"
             ]) p2pPeerWgIps))}
             ${lib.optionalString (p2pInterfaces != [ ]) "iifname { ${p2pInterfaceSet} } ip protocol icmp accept"}
+            ip protocol icmp accept
+          }
+
+          chain forward {
+            type filter hook forward priority 0; policy drop;
+          }
+
+          chain output {
+            type filter hook output priority 0; policy accept;
+          }
+        '';
+      };
+    })
+
+    (lib.mkIf (hasRole "portal") {
+      portal = {
+        family = "inet";
+        content = ''
+          chain input {
+            type filter hook input priority 0; policy drop;
+            iifname "lo" accept
+            ct state established,related accept
+            ${lib.concatStringsSep "\n            " (map (iface:
+              "iifname \"${iface}\" accept"
+            ) myWgInterfaces)}
             ip protocol icmp accept
           }
 

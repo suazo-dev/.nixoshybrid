@@ -210,27 +210,6 @@ alias -g L='| less'
 alias -g C='| wc -l'
 alias -g N='> /dev/null 2>&1'
 
-# Nix helpers
-rb() {
-  if [[ -z "$1" ]]; then
-    echo "usage: rb <machine>"
-    return 1
-  fi
-
-  local flake_root="${NIXCFG_ROOT:-$HOME/.nixos}"
-
-  if nix eval --raw "${flake_root}#darwinConfigurations.$1.pkgs.stdenv.hostPlatform.system" >/dev/null 2>&1; then
-    if ! command -v darwin-rebuild >/dev/null 2>&1; then
-      echo "darwin-rebuild is not available here; run this on the Mac host"
-      return 1
-    fi
-
-    darwin-rebuild switch --flake "${flake_root}#$1"
-  else
-    sudo nixos-rebuild switch --flake "${flake_root}#$1"
-  fi
-}
-
 ndev() { nix develop "$@"; }
 nrun() { nix develop -c "$@"; }
 fshow() { nix flake show "$@"; }
@@ -280,14 +259,35 @@ alias wg0off='wgoff wg0'
 alias wg1on='wgon wg1'
 alias wg1off='wgoff wg1'
 
-# Portal helpers
-if [[ "${ZSH_HOST_PORTAL:-0}" == "1" ]]; then
-  alias tinyon='wakeonlan 00:23:24:73:05:91'
-  alias sshtiny='ssh suazo@tiny'
-  alias sshpapa="TERM=xterm-256color ssh -t suazo@papa 'LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 tmux -u new -As main'"
-  alias sshmama="TERM=xterm-256color ssh -t suazo@mama 'LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 tmux -u new -As main'"
-  alias vncpapa='remmina -c vnc://suazo@papa'
-fi
+# Rebuild
+rb() {
+  local name="${1:-$(hostname)}"
+  cd ~/.nixoshybrid && git pull
+  if [[ "$(uname)" == "Darwin" ]]; then
+    sudo darwin-rebuild switch --flake "$HOME/.nixoshybrid#$name"
+  else
+    sudo nixos-rebuild switch --flake "$HOME/.nixoshybrid#$name"
+  fi
+}
+alias rbtiny='rb tiny'
+alias rbmama='rb mama'
+alias rbslim='rb slim'
+alias rbtee='rb tee'
+alias rbpapa='rb papa'
+
+# SSH
+alias sshtiny='ssh suazo@tiny'
+alias sshmama="TERM=xterm-256color ssh -t suazo@mama 'LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 tmux -u new -As main'"
+alias sshpapa="TERM=xterm-256color ssh -t suazo@papa 'LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 tmux -u new -As main'"
+alias sshslim='ssh suazo@slim'
+alias sshtee='ssh suazo@tee'
+
+# Wake on LAN
+alias waketiny='wakeonlan 00:23:24:73:05:91'
+alias wakemama='wakeonlan c4:65:16:b6:8c:3c'
+
+# VNC
+alias vncpapa='remmina -c vnc://suazo@papa'
 
 # Fuzzy helpers
 cdf() {

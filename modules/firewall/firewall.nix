@@ -1,28 +1,59 @@
+# Darwin firewall — lock down like nftables does for linux.
+# Block ALL incoming except from WireGuard peer IPs.
 { lib, machineName, spec, ... }:
 let
   registry = import ../../network/registry.nix;
   allMachines = registry.machines;
+  isCore = builtins.elem "core" (spec.roles or [ ]);
+
+  # Collect all WG IPs from all machines on all non-p2p networks
   adminNetworks = builtins.filter (netName:
     (registry.networks.${netName}.type or "hub") != "p2p"
   ) (builtins.attrNames registry.networks);
+
   allWgIps = lib.unique (lib.concatMap (otherMachineName:
     lib.concatMap (netName:
       let net = (allMachines.${otherMachineName}.wg or {}).${netName} or null;
       in lib.optional (net != null && net ? ip) net.ip
     ) adminNetworks
   ) (builtins.attrNames allMachines));
-  allowedSources = builtins.filter (ip: ip != null) allWgIps;
+
+  # Also include p2p peer IPs for this machine
+  myEntry = allMachines.${machineName} or {};
+  myNetworks = builtins.attrNames (myEntry.wg or {});
+  p2pPeerIps = lib.concatMap (netName:
+    let
+      netDef = registry.networks.${netName} or {};
+      isP2P = (netDef.type or "hub") == "p2p";
+    in
+      if !isP2P then []
+      else lib.concatMap (name:
+        if name == machineName then []
+        else
+          let peerNet = (allMachines.${name}).wg.${netName} or {};
+          in if peerNet ? ip then [ peerNet.ip ] else []
+      ) (builtins.filter (name:
+        builtins.hasAttr netName ((allMachines.${name}).wg or {})
+      ) (builtins.attrNames allMachines))
+  ) myNetworks;
+
+  allowedSources = lib.unique (builtins.filter (ip: ip != null) (allWgIps ++ p2pPeerIps));
   sourceSet = lib.concatStringsSep ", " allowedSources;
-  isCore = builtins.elem "core" (spec.roles or [ ]);
-  screensharingEnabled = spec.facts.gui or false;
+
   managedAnchor = ''
     table <nixoshybrid_wg_sources> const { ${sourceSet} }
 
-    pass in quick inet proto tcp from <nixoshybrid_wg_sources> to any port 22 keep state
-    ${lib.optionalString screensharingEnabled "pass in quick inet proto tcp from <nixoshybrid_wg_sources> to any port 5900 keep state"}
+    # Allow all outbound, track state so replies come back in
+    pass out all keep state
 
-    block in quick inet proto tcp to any port 22
-    ${lib.optionalString screensharingEnabled "block in quick inet proto tcp to any port 5900"}
+    # Allow all traffic from WireGuard peers
+    pass in quick from <nixoshybrid_wg_sources> keep state
+
+    # Allow loopback
+    pass in quick on lo0 all keep state
+
+    # Block everything else inbound
+    block in all
   '';
 in {
   networking.applicationFirewall = {
@@ -30,7 +61,7 @@ in {
     enableStealthMode = isCore;
     allowSigned = true;
     allowSignedApp = false;
-    blockAllIncoming = false;
+    blockAllIncoming = true;
   };
 
   environment.etc."pf.anchors/nixoshybrid".text = lib.mkIf isCore managedAnchor;
