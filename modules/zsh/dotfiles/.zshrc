@@ -287,7 +287,7 @@ alias waketiny='wakeonlan 00:23:24:73:05:91'
 alias wakemama='wakeonlan c4:65:16:b6:8c:3c'
 
 # VNC
-alias vncpapa='remmina -c vnc://suazo@papa'
+alias vncpapa='remmina -c vnc://suazo@10.0.0.3'
 
 # Fuzzy helpers
 cdf() {
