@@ -46,6 +46,7 @@
     "firefox"
     "zed"
     "claude-code"
+    "pi-coding-agent"
     "nvf"
     "helix"
     "opencode"
