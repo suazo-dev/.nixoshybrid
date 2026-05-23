@@ -13,6 +13,7 @@ let
   gatewayIp = gatewayMachine.wg.core.ip;
   gatewayPort = 8642;
   envSecretName = "hermes/runtime-env";
+  authSecretName = "hermes/auth-json";
 in {
   imports = lib.optionals isGatewayHost [ inputs.hermes-agent.nixosModules.default ];
 
@@ -21,7 +22,7 @@ in {
   ];
 } // lib.optionalAttrs isGatewayHost {
   # One env file for gateway runtime secrets/settings. Suggested contents:
-  #   API_SERVER_KEY=strong-random-string
+  #   API_SERVER_KEY=strong-random-string  # required for 0.0.0.0 binds
   #   TELEGRAM_BOT_TOKEN=123456:telegram-token
   #   TELEGRAM_ALLOWED_USERS=123456789
   # Optional extras if you want them later:
@@ -34,10 +35,21 @@ in {
     path = "/run/secrets/hermes-runtime.env";
   };
 
+  # Seed Hermes' auth store for the openai-codex provider. Populate this with
+  # the contents of ~/.hermes/auth.json after `hermes auth add openai-codex` on
+  # a machine where you can complete the device-code login flow.
+  sops.secrets.${authSecretName} = {
+    owner = "root";
+    group = "root";
+    mode = "0400";
+    path = "/run/secrets/hermes-auth.json";
+  };
+
   services.hermes-agent = {
     enable = true;
     addToSystemPackages = true;
     environmentFiles = [ config.sops.secrets.${envSecretName}.path ];
+    authFile = config.sops.secrets.${authSecretName}.path;
 
     container = {
       enable = true;
