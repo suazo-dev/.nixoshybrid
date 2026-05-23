@@ -62,6 +62,7 @@
     "shellcheck"
     "shfmt"
     "tree-sitter"
+    "always-on"
     "openssh"
     "duckdns"
     "nfs-server"

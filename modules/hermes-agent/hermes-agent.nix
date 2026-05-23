@@ -1,47 +1,53 @@
 # Hermes Agent module.
-# mama is the single Hermes host. It runs the gateway inside Hermes' OCI
-# container mode, exposes the OpenAI-compatible API server, and can also run
-# Telegram from the same gateway. Other machines only get the CLI package.
+# The storage node runs the Hermes gateway inside OCI container mode, exposes
+# the OpenAI-compatible API server, and can also run Telegram from the same
+# gateway. Other machines only get the CLI package.
 { lib, pkgs, inputs, spec, machineName, config, ... }:
 let
   registry = import ../../network/registry.nix;
+  nodeRoot = ../../nodes;
   isDarwin = lib.hasSuffix "-darwin" spec.system;
   isLinux = !isDarwin;
-  gatewayMachineName = "mama";
-  isGatewayHost = isLinux && machineName == gatewayMachineName;
-  gatewayMachine = registry.machines.${gatewayMachineName};
-  gatewayIp = gatewayMachine.wg.core.ip;
-  gatewayPort = 8642;
+  isHermesHost = spec.facts.hermes.gateway or false;
+  hermesHostName = lib.findFirst (name:
+    let
+      m = registry.machines.${name};
+      node = import (nodeRoot + "/${m.nodeName}.nix");
+    in node.facts.hermes.gateway or false
+  ) (throw "No machine with hermes.gateway fact found") registry.machineNames;
+  hermesMachine = registry.machines.${hermesHostName};
+  hermesIp = hermesMachine.wg.core.ip;
+  hermesApiPort = 8642;
   dashboardPort = 9119;
   envSecretName = "hermes/runtime-env";
   authSecretName = "hermes/auth-json";
   hermesPackage = inputs.hermes-agent.packages.${spec.system}.default.override {
     extraDependencyGroups = [ "messaging" ];
   };
-  remoteTuiPackage = pkgs.writeShellScriptBin "hermes-mama" ''
+  remoteTuiPackage = pkgs.writeShellScriptBin "hermes-${hermesHostName}" ''
     set -euo pipefail
 
-    dashboard_url="http://${gatewayIp}:${toString dashboardPort}"
+    dashboard_url="http://${hermesIp}:${toString dashboardPort}"
     html="$(curl -fsSL "$dashboard_url/")"
     token="$(printf '%s' "$html" | rg -o 'window\.__HERMES_SESSION_TOKEN__="([^"]+)"' -r '$1' -N -m1)"
 
     if [ -z "$token" ]; then
       printf '%s\n' "Failed to extract Hermes dashboard session token from $dashboard_url" >&2
-      printf '%s\n' "Make sure the dashboard is enabled on ${gatewayMachineName} and reachable over WireGuard." >&2
+      printf '%s\n' "Make sure the dashboard is enabled on ${hermesHostName} and reachable over WireGuard." >&2
       exit 1
     fi
 
-    export HERMES_TUI_GATEWAY_URL="ws://${gatewayIp}:${toString dashboardPort}/api/ws?token=$token"
+    export HERMES_TUI_GATEWAY_URL="ws://${hermesIp}:${toString dashboardPort}/api/ws?token=$token"
     exec hermes --tui "$@"
   '';
 in {
-  imports = lib.optionals isGatewayHost [ inputs.hermes-agent.nixosModules.default ];
+  imports = lib.optionals isHermesHost [ inputs.hermes-agent.nixosModules.default ];
 
-  environment.systemPackages = lib.mkIf (!isGatewayHost) [
+  environment.systemPackages = lib.mkIf (!isHermesHost) [
     inputs.hermes-agent.packages.${spec.system}.default
     remoteTuiPackage
   ];
-} // lib.optionalAttrs isGatewayHost {
+} // lib.optionalAttrs isHermesHost {
   # One env file for gateway runtime secrets/settings. Suggested contents:
   #   API_SERVER_KEY=strong-random-string  # required for 0.0.0.0 binds
   #   TELEGRAM_BOT_TOKEN=123456:telegram-token
@@ -109,7 +115,7 @@ in {
     environment = {
       API_SERVER_ENABLED = "true";
       API_SERVER_HOST = "0.0.0.0";
-      API_SERVER_PORT = toString gatewayPort;
+      API_SERVER_PORT = toString hermesApiPort;
       API_SERVER_MODEL_NAME = "hermes-agent";
     };
   };

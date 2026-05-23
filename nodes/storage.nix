@@ -18,6 +18,7 @@
   };
 
   facts = {
+    hermes.gateway = true;
     storage.nfs.enable = true;
     network = {
       useNetworkManager = false;

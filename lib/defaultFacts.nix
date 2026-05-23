@@ -23,6 +23,10 @@
 
   sync.folder = null;
 
+  hermes = {
+    gateway = false;
+  };
+
   storage = {
     nfs = {
       enable = false;
