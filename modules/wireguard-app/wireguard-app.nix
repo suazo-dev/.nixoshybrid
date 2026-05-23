@@ -38,7 +38,7 @@ let
         if isP2P then
           if peerNet == null then "<missing-peer>/32" else "${peerNet.ip}/32"
         else if netDef.fullTunnel or false then
-          "0.0.0.0/0, ::/0"
+          "0.0.0.0/1, 128.0.0.0/1, ::/1, 8000::/1"
         else
           builtins.concatStringsSep ", " ([ netDef.subnet ] ++ (netDef.extraAllowedIPs or [ ]));
       endpointLine =
