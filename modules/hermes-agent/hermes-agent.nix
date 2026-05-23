@@ -132,14 +132,14 @@ in {
       ExecStart = ''
         /run/current-system/sw/bin/docker exec \
           --interactive \
-          --user ${spec.user} \
-          --env HOME=/home/${spec.user} \
+          --user hermes \
+          --env HOME=/home/hermes \
           --env HERMES_HOME=/data/.hermes \
           --env HERMES_DASHBOARD_TUI=1 \
           hermes-agent \
           /data/current-package/bin/hermes dashboard --host 0.0.0.0 --port ${toString dashboardPort} --tui --skip-build --no-open --insecure
       '';
-      ExecStop = "/run/current-system/sw/bin/docker exec --user ${spec.user} hermes-agent /data/current-package/bin/hermes dashboard --stop";
+      ExecStop = "/run/current-system/sw/bin/docker exec --user hermes hermes-agent /data/current-package/bin/hermes dashboard --stop";
     };
   };
 }
