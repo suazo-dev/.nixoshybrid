@@ -15,6 +15,9 @@ let
   dashboardPort = 9119;
   envSecretName = "hermes/runtime-env";
   authSecretName = "hermes/auth-json";
+  hermesPackage = inputs.hermes-agent.packages.${spec.system}.default.override {
+    extraDependencyGroups = [ "messaging" ];
+  };
   remoteTuiPackage = pkgs.writeShellScriptBin "hermes-mama" ''
     set -euo pipefail
 
@@ -66,6 +69,7 @@ in {
   services.hermes-agent = {
     enable = true;
     addToSystemPackages = true;
+    package = hermesPackage;
     environmentFiles = [ config.sops.secrets.${envSecretName}.path ];
     authFile = config.sops.secrets.${authSecretName}.path;
 
