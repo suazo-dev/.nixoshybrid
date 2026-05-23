@@ -73,12 +73,6 @@ in {
       enable = true;
       image = "ubuntu:24.04";
       hostUsers = [ spec.user ];
-      extraOptions = [
-        "--env=HERMES_DASHBOARD=1"
-        "--env=HERMES_DASHBOARD_HOST=0.0.0.0"
-        "--env=HERMES_DASHBOARD_PORT=${toString dashboardPort}"
-        "--env=HERMES_DASHBOARD_TUI=1"
-      ];
     };
 
     settings = {
@@ -123,4 +117,29 @@ in {
       options = [ "NOPASSWD" ];
     }];
   }];
+
+  systemd.services.hermes-agent-dashboard = {
+    description = "Hermes Agent Web UI (container)";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "hermes-agent.service" ];
+    wants = [ "hermes-agent.service" ];
+    requires = [ "hermes-agent.service" ];
+
+    serviceConfig = {
+      Type = "simple";
+      Restart = "always";
+      RestartSec = 5;
+      ExecStart = ''
+        /run/current-system/sw/bin/docker exec \
+          --interactive \
+          --user ${spec.user} \
+          --env HOME=/home/${spec.user} \
+          --env HERMES_HOME=/data/.hermes \
+          --env HERMES_DASHBOARD_TUI=1 \
+          hermes-agent \
+          /data/current-package/bin/hermes dashboard --host 0.0.0.0 --port ${toString dashboardPort} --tui --skip-build --no-open --insecure
+      '';
+      ExecStop = "/run/current-system/sw/bin/docker exec --user ${spec.user} hermes-agent /data/current-package/bin/hermes dashboard --stop";
+    };
+  };
 }
