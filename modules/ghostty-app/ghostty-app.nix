@@ -1,6 +1,6 @@
 { lib, spec, ... }:
 let
-  ghosttyRoot = "${spec.repoRoot}/modules/gui/ghostty/dotfiles/ghostty";
+  ghosttyRoot = "${spec.repoRoot}/modules/ghostty/dotfiles/ghostty";
 in {
   environment.variables = lib.mkIf (!spec.facts.headless) {
     TERMINAL = "ghostty";

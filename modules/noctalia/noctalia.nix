@@ -10,6 +10,6 @@ in
   home-manager.users.${spec.user} = lib.mkIf (!spec.facts.headless) ({ config, ... }: {
     xdg.configFile."noctalia".source =
       config.lib.file.mkOutOfStoreSymlink
-        "${spec.repoRoot}/modules/gui/noctalia/dotfiles/noctalia";
+        "${spec.repoRoot}/modules/noctalia/dotfiles/noctalia";
   });
 }

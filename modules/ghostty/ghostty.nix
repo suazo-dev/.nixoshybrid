@@ -9,6 +9,6 @@
   home-manager.users.${spec.user} = lib.mkIf (!spec.facts.headless) ({ config, ... }: {
     xdg.configFile."ghostty".source =
       config.lib.file.mkOutOfStoreSymlink
-      "${spec.repoRoot}/modules/gui/ghostty/dotfiles/ghostty";
+      "${spec.repoRoot}/modules/ghostty/dotfiles/ghostty";
   });
 }

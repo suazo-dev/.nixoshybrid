@@ -65,6 +65,7 @@
     "openssh"
     "duckdns"
     "nfs-server"
+    "hermes-agent"
   ];
 
   linuxModules = [

@@ -9,6 +9,6 @@
   home-manager.users.${spec.user} = lib.mkIf (!spec.facts.headless) ({config, ...}: {
     xdg.configFile."fuzzel".source =
       config.lib.file.mkOutOfStoreSymlink
-      "${spec.repoRoot}/modules/gui/fuzzel/dotfiles/fuzzel";
+      "${spec.repoRoot}/modules/fuzzel/dotfiles/fuzzel";
   });
 }
