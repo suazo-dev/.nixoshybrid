@@ -4,6 +4,7 @@
 { lib, pkgs, spec, machineName, ... }:
 let
   registry = import ../../network/registry.nix;
+  knockd = pkgs.callPackage ./package.nix { };
   isGateway = spec.nodeName == "gateway";
   lanInterface = (registry.machines.${machineName}.lan or {}).interface or "eno1";
 
@@ -19,14 +20,14 @@ let
     start_command = ${pkgs.nftables}/bin/nft add element inet gateway emergency_ssh_sources { %IP% timeout 60s }
   '';
 in {
-  environment.systemPackages = [ pkgs.knockd ];
+  environment.systemPackages = [ knockd ];
 
   systemd.services.knockd = lib.mkIf isGateway {
     description = "Port knocking daemon — emergency LAN SSH access";
     after = [ "network.target" "nftables.service" ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
-      ExecStart = "${pkgs.knockd}/bin/knockd -d -c ${knockdConf}";
+      ExecStart = "${knockd}/bin/knockd -d -c ${knockdConf}";
       Restart = "on-failure";
       RestartSec = "5s";
     };
