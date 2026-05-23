@@ -10,9 +10,8 @@ in lib.mkIf alwaysOn (
     power = {
       sleep.computer = "never";
       sleep.display = 15;
-      sleep.harddisk = 0;
-      restoreAppsOnReboot = false;
-    };
+      sleep.harddisk = "never";
+};
   } else {
     environment.systemPackages = [ pkgs.wakeonlan pkgs.ethtool ];
 

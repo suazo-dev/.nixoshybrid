@@ -56,6 +56,39 @@ let
       ) (builtins.attrNames registry.machines))
   ) activeNetworks;
 
+  # Trusted user machine IPs — non-gateway machines on core + portal machines.
+  # These are the user's own machines (papa, mama, slim, tee).
+  # Tiny (gateway) is excluded — it routes traffic but cannot initiate into protected machines.
+  allMachines = registry.machines;
+  trustedUserIps =
+    let
+      coreIps = lib.concatMap (name:
+        let machine = allMachines.${name};
+        in if name != machineName
+           && machine.nodeName != "gateway"
+           && builtins.hasAttr "core" (machine.wg or {})
+        then [ machine.wg.core.ip ]
+        else []
+      ) (builtins.attrNames allMachines);
+      portalIps = lib.concatMap (name:
+        let machine = allMachines.${name};
+        in if machine.nodeName == "portal"
+           && builtins.hasAttr "portal" (machine.wg or {})
+        then [ machine.wg.portal.ip ]
+        else []
+      ) (builtins.attrNames allMachines);
+    in lib.unique (coreIps ++ portalIps);
+  trustedUserIpSet = lib.concatStringsSep ", " trustedUserIps;
+
+  # P2P listen ports on this machine (for WireGuard handshakes from LAN peers)
+  p2pListenPorts = lib.concatMap (netName:
+    let
+      myNet = myEntry.wg.${netName} or {};
+      netDef = registry.networks.${netName} or {};
+      isP2P = (netDef.type or "hub") == "p2p";
+    in if isP2P && myNet ? listenPort then [ myNet.listenPort ] else []
+  ) activeNetworks;
+
 in {
   boot.kernel.sysctl = lib.mkIf (hasRole "gateway") {
     "net.ipv4.ip_forward" = 1;
@@ -71,6 +104,12 @@ in {
       gateway = {
         family = "inet";
         content = ''
+          # Emergency LAN access — knockd adds IPs here temporarily (60s timeout)
+          set emergency_ssh_sources {
+            type ipv4_addr
+            flags timeout
+          }
+
           chain input {
             type filter hook input priority 0; policy drop;
             iifname "lo" accept
@@ -78,7 +117,7 @@ in {
             iifname { ${hubInterfaceSet} } accept
             ip protocol icmp accept
             udp dport { ${wgPorts} } accept
-            iifname { ${hubInterfaceSet} } tcp dport 22 accept
+            ip saddr @emergency_ssh_sources tcp dport 22 accept
           }
 
           chain forward {
@@ -133,12 +172,14 @@ in {
             type filter hook input priority 0; policy drop;
             iifname "lo" accept
             ct state established,related accept
-            ${lib.optionalString (hubInterfaces != [ ]) "iifname { ${hubInterfaceSet} } accept"}
+            ${lib.concatStringsSep "\n            " (map (port:
+              "udp dport ${toString port} accept"
+            ) p2pListenPorts)}
+            ${lib.optionalString (trustedUserIps != []) "ip saddr { ${trustedUserIpSet} } tcp dport 22 accept"}
             ${lib.optionalString nfsEnabled (lib.concatStringsSep "\n            " (lib.concatMap (ip: [
               "ip saddr ${ip} tcp dport 2049 accept"
               "ip saddr ${ip} udp dport 2049 accept"
             ]) p2pPeerWgIps))}
-            ${lib.optionalString (p2pInterfaces != [ ]) "iifname { ${p2pInterfaceSet} } ip protocol icmp accept"}
             ip protocol icmp accept
           }
 

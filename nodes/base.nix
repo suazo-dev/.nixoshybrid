@@ -115,6 +115,7 @@
     "networkmanagerapplet"
     "intel"
     "nix-ld"
+    "knockd"
     "lan"
     "syncthing"
     "wireguard"

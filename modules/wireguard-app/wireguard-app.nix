@@ -33,6 +33,7 @@ let
       peerName = peerFor netName;
       peerNet = if peerName == null then null else allMachines.${peerName}.wg.${netName};
       isP2P = (netDef.type or "hub") == "p2p";
+      isFullTunnel = !isP2P && (netDef.fullTunnel or false);
       allowedIPs =
         if isP2P then
           if peerNet == null then "<missing-peer>/32" else "${peerNet.ip}/32"
@@ -54,7 +55,7 @@ let
 [Interface]
 PrivateKey = <private-key>
 Address = ${myNet.ip}/24
-
+${if isFullTunnel then "DNS = 1.1.1.1" else ""}
 [Peer]
 PublicKey = ${publicKey}
 ${endpointLine}

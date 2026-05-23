@@ -1,24 +1,23 @@
-# Darwin firewall — lock down like nftables does for linux.
-# Block ALL incoming except from WireGuard peer IPs.
+# Darwin firewall — registry-driven, zero-trust inbound.
+# Internet responses flow via state tracking (pass out keep state).
+# Only user's laptops (portal machines) can initiate SSH/VNC into papa.
+# Tiny (gateway) cannot initiate connections into papa.
 { lib, machineName, spec, ... }:
 let
   registry = import ../../network/registry.nix;
   allMachines = registry.machines;
   isCore = builtins.elem "core" (spec.roles or [ ]);
 
-  # Collect all WG IPs from all machines on all non-p2p networks
-  adminNetworks = builtins.filter (netName:
-    (registry.networks.${netName}.type or "hub") != "p2p"
-  ) (builtins.attrNames registry.networks);
+  # Only portal machines (user's laptops) can initiate connections inbound
+  portalPeerIps = lib.concatMap (name:
+    let machine = allMachines.${name};
+    in if machine.nodeName == "portal"
+       && builtins.hasAttr "portal" (machine.wg or {})
+    then [ machine.wg.portal.ip ]
+    else []
+  ) (builtins.attrNames allMachines);
 
-  allWgIps = lib.unique (lib.concatMap (otherMachineName:
-    lib.concatMap (netName:
-      let net = (allMachines.${otherMachineName}.wg or {}).${netName} or null;
-      in lib.optional (net != null && net ? ip) net.ip
-    ) adminNetworks
-  ) (builtins.attrNames allMachines));
-
-  # Also include p2p peer IPs for this machine
+  # Also include p2p peers (mama) for storage network access
   myEntry = allMachines.${machineName} or {};
   myNetworks = builtins.attrNames (myEntry.wg or {});
   p2pPeerIps = lib.concatMap (netName:
@@ -37,20 +36,20 @@ let
       ) (builtins.attrNames allMachines))
   ) myNetworks;
 
-  allowedSources = lib.unique (builtins.filter (ip: ip != null) (allWgIps ++ p2pPeerIps));
-  sourceSet = lib.concatStringsSep ", " allowedSources;
+  trustedIps = lib.unique (portalPeerIps ++ p2pPeerIps);
+  trustedSet = lib.concatStringsSep ", " trustedIps;
 
   managedAnchor = ''
-    table <nixoshybrid_wg_sources> const { ${sourceSet} }
+    table <nixoshybrid_trusted> const { ${trustedSet} }
 
-    # Allow all outbound, track state so replies come back in
+    # Allow all outbound — state tracking lets responses back in automatically
     pass out all keep state
-
-    # Allow all traffic from WireGuard peers
-    pass in quick from <nixoshybrid_wg_sources> keep state
 
     # Allow loopback
     pass in quick on lo0 all keep state
+
+    # Allow SSH and VNC only from trusted machines (laptops + storage peer)
+    pass in quick from <nixoshybrid_trusted> to any port { 22, 5900 } keep state
 
     # Block everything else inbound
     block in all
