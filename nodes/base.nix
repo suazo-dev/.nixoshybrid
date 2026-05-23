@@ -119,6 +119,7 @@
     "lan"
     "syncthing"
     "wireguard"
+    "wireguard-watchdog"
     "networkmanager"
     "iwd"
   ];
