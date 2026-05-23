@@ -2,7 +2,7 @@
 # mama is the single Hermes host. It runs the gateway inside Hermes' OCI
 # container mode, exposes the OpenAI-compatible API server, and can also run
 # Telegram from the same gateway. Other machines only get the CLI package.
-{ lib, inputs, spec, machineName, config, ... }:
+{ lib, pkgs, inputs, spec, machineName, config, ... }:
 let
   registry = import ../../network/registry.nix;
   isDarwin = lib.hasSuffix "-darwin" spec.system;
@@ -12,13 +12,31 @@ let
   gatewayMachine = registry.machines.${gatewayMachineName};
   gatewayIp = gatewayMachine.wg.core.ip;
   gatewayPort = 8642;
+  dashboardPort = 9119;
   envSecretName = "hermes/runtime-env";
   authSecretName = "hermes/auth-json";
+  remoteTuiPackage = pkgs.writeShellScriptBin "hermes-mama" ''
+    set -euo pipefail
+
+    dashboard_url="http://${gatewayIp}:${toString dashboardPort}"
+    html="$(curl -fsSL "$dashboard_url/")"
+    token="$(printf '%s' "$html" | rg -o 'window\.__HERMES_SESSION_TOKEN__="([^"]+)"' -r '$1' -N -m1)"
+
+    if [ -z "$token" ]; then
+      printf '%s\n' "Failed to extract Hermes dashboard session token from $dashboard_url" >&2
+      printf '%s\n' "Make sure the dashboard is enabled on ${gatewayMachineName} and reachable over WireGuard." >&2
+      exit 1
+    fi
+
+    export HERMES_TUI_GATEWAY_URL="ws://${gatewayIp}:${toString dashboardPort}/api/ws?token=$token"
+    exec hermes --tui "$@"
+  '';
 in {
   imports = lib.optionals isGatewayHost [ inputs.hermes-agent.nixosModules.default ];
 
   environment.systemPackages = lib.mkIf (!isGatewayHost) [
     inputs.hermes-agent.packages.${spec.system}.default
+    remoteTuiPackage
   ];
 } // lib.optionalAttrs isGatewayHost {
   # One env file for gateway runtime secrets/settings. Suggested contents:
@@ -55,6 +73,12 @@ in {
       enable = true;
       image = "ubuntu:24.04";
       hostUsers = [ spec.user ];
+      extraOptions = [
+        "--env=HERMES_DASHBOARD=1"
+        "--env=HERMES_DASHBOARD_HOST=0.0.0.0"
+        "--env=HERMES_DASHBOARD_PORT=${toString dashboardPort}"
+        "--env=HERMES_DASHBOARD_TUI=1"
+      ];
     };
 
     settings = {
@@ -91,4 +115,12 @@ in {
       API_SERVER_MODEL_NAME = "hermes-agent";
     };
   };
+
+  security.sudo.extraRules = [{
+    users = [ spec.user ];
+    commands = [{
+      command = "/run/current-system/sw/bin/docker";
+      options = [ "NOPASSWD" ];
+    }];
+  }];
 }
