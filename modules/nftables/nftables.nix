@@ -6,6 +6,7 @@ let
   hasRole = role: builtins.elem role spec.roles;
   storageCfg = spec.facts.storage or {};
   nfsEnabled = storageCfg.nfs.enable or false;
+  hermesEnabled = spec.facts.hermes.gateway or false;
 
   # Derive WG interface names from registry for this machine
   myEntry = registry.machines.${machineName} or {};
@@ -180,6 +181,7 @@ in {
               "ip saddr ${ip} tcp dport 2049 accept"
               "ip saddr ${ip} udp dport 2049 accept"
             ]) p2pPeerWgIps))}
+            ${lib.optionalString (hermesEnabled && trustedUserIps != []) "ip saddr { ${trustedUserIpSet} } tcp dport { 8642, 9119 } accept"}
             ip protocol icmp accept
           }
 
