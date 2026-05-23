@@ -60,7 +60,7 @@ in {
     enableStealthMode = isCore;
     allowSigned = true;
     allowSignedApp = false;
-    blockAllIncoming = true;
+    blockAllIncoming = false;
   };
 
   environment.etc."pf.anchors/nixoshybrid".text = lib.mkIf isCore managedAnchor;
