@@ -31,7 +31,7 @@ let
     ) (builtins.attrNames registry.machines))
   ) myP2PNetworks;
 
-  exportClients = map (ip: "${ip}(rw,sync,no_subtree_check,no_root_squash)") peerWgIps;
+  exportClients = map (ip: "${ip}(rw,sync,no_subtree_check,root_squash)") peerWgIps;
 in {
   assertions = lib.optional enabled {
     assertion = exportClients != [];

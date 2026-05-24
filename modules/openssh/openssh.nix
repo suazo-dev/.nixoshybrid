@@ -45,7 +45,7 @@ in {
   home-manager.users.${spec.user} = { ... }: {
     programs.ssh = {
       enable = true;
-      addKeysToAgent = if isDarwin then "yes" else "confirm";
+      addKeysToAgent = if isDarwin then "4h" else "confirm 4h";
       extraConfig = lib.optionalString isDarwin ''
         UseKeychain yes
       '';
