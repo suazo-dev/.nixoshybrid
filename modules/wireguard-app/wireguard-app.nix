@@ -52,17 +52,15 @@ let
           builtins.concatStringsSep ", "
             ([ netDef.subnet ] ++ (netDef.extraAllowedIPs or []));
 
-      endpoint =
-        if peerNet != null && peerNet ? endpoint then peerNet.endpoint
-        else if !isP2P then "${gwEndpoint}:${toString netDef.port}"
-        else null;
+      lanEndpoint = if peerNet != null && peerNet ? endpoint then peerNet.endpoint else null;
+      publicEndpoint = if !isP2P then "${gwEndpoint}:${toString netDef.port}" else null;
     in {
       name = netName;
       keyPath = "/etc/wireguard/${netName}.key";
       confPath = "/etc/wireguard/${netName}.conf";
       address = "${myNet.ip}/${subnetMask netDef.subnet}";
       publicKey = if peerNet != null then peerNet.publicKey else "<missing-peer>";
-      inherit allowedIPs endpoint fullTunnel;
+      inherit allowedIPs lanEndpoint publicEndpoint fullTunnel;
     };
 
   nets = map mkNet activeNetworks;
@@ -73,7 +71,6 @@ let
   mkDaemon = net:
     let
       dnsLine = lib.optionalString net.fullTunnel "\nDNS = 1.1.1.1";
-      endpointLine = lib.optionalString (net.endpoint != null) "\nEndpoint = ${net.endpoint}";
     in
     lib.nameValuePair "wireguard-${net.name}" {
       script = ''
@@ -81,6 +78,9 @@ let
 
         KEY=${lib.escapeShellArg net.keyPath}
         CONF=${lib.escapeShellArg net.confPath}
+        LAN_ENDPOINT=${lib.escapeShellArg (if net.lanEndpoint != null then net.lanEndpoint else "")}
+        PUBLIC_ENDPOINT=${lib.escapeShellArg (if net.publicEndpoint != null then net.publicEndpoint else "")}
+        PEER_PUBLIC_KEY=${lib.escapeShellArg net.publicKey}
 
         if [ ! -f "$KEY" ]; then
           echo "wireguard-${net.name}: key not found at $KEY — place key and restart" >&2
@@ -92,25 +92,89 @@ let
         /bin/mkdir -p /etc/wireguard
         /bin/chmod 700 /etc/wireguard
 
-        cat > "$CONF" << WGEOF
-        [Interface]
-        PrivateKey = $PRIV
-        Address = ${net.address}${dnsLine}
+        write_conf() {
+          endpoint=$1
+          endpoint_line=""
+          if [ -n "$endpoint" ]; then
+            endpoint_line="Endpoint = $endpoint"
+          fi
 
-        [Peer]
-        PublicKey = ${net.publicKey}${endpointLine}
-        AllowedIPs = ${net.allowedIPs}
-        PersistentKeepalive = 25
-        WGEOF
+          cat > "$CONF" << WGEOF
+[Interface]
+PrivateKey = $PRIV
+Address = ${net.address}${dnsLine}
 
-        /bin/chmod 600 "$CONF"
+[Peer]
+PublicKey = ${net.publicKey}
+$endpoint_line
+AllowedIPs = ${net.allowedIPs}
+PersistentKeepalive = 25
+WGEOF
+
+          /bin/chmod 600 "$CONF"
+        }
+
+        wait_for_handshake() {
+          attempts=3
+          while [ "$attempts" -gt 0 ]; do
+            while read -r iface peer latest; do
+              if [ "$peer" = "$PEER_PUBLIC_KEY" ] && [ "''${latest:-0}" -gt 0 ]; then
+                return 0
+              fi
+            done <<WGHS
+$(${wgTools}/wg show all latest-handshakes 2>/dev/null || true)
+WGHS
+            /bin/sleep 2
+            attempts=$((attempts - 1))
+          done
+          return 1
+        }
+
+        try_endpoint() {
+          endpoint=$1
+          label=$2
+
+          write_conf "$endpoint"
+
+          if ! wg-quick up "$CONF"; then
+            echo "wireguard-${net.name}: wg-quick up failed via $label endpoint" >&2
+            wg-quick down "$CONF" 2>/dev/null || true
+            return 1
+          fi
+
+          if wait_for_handshake; then
+            return 0
+          fi
+
+          echo "wireguard-${net.name}: no handshake via $label endpoint" >&2
+          wg-quick down "$CONF" 2>/dev/null || true
+          return 1
+        }
 
         # Clean up any stale tunnel from a previous run.
         wg-quick down "$CONF" 2>/dev/null || true
 
-        if ! wg-quick up "$CONF"; then
-          echo "wireguard-${net.name}: wg-quick up failed" >&2
-          exit 1
+        if [ -n "$LAN_ENDPOINT" ] && [ -n "$PUBLIC_ENDPOINT" ] && [ "$LAN_ENDPOINT" != "$PUBLIC_ENDPOINT" ]; then
+          if ! try_endpoint "$LAN_ENDPOINT" "lan"; then
+            if ! try_endpoint "$PUBLIC_ENDPOINT" "public"; then
+              echo "wireguard-${net.name}: both lan and public endpoints failed" >&2
+              exit 1
+            fi
+          fi
+        elif [ -n "$LAN_ENDPOINT" ]; then
+          if ! try_endpoint "$LAN_ENDPOINT" "lan"; then
+            exit 1
+          fi
+        elif [ -n "$PUBLIC_ENDPOINT" ]; then
+          if ! try_endpoint "$PUBLIC_ENDPOINT" "public"; then
+            exit 1
+          fi
+        else
+          write_conf ""
+          if ! wg-quick up "$CONF"; then
+            echo "wireguard-${net.name}: wg-quick up failed" >&2
+            exit 1
+          fi
         fi
 
         echo "wireguard-${net.name}: tunnel up"
