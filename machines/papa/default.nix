@@ -9,7 +9,7 @@
   hardware = "hardware-configuration.nix";
 
   wgPublicKeys = {
-    core = "MvK8o+P3Z5f1DnupwVw+xQ87aoJZlofWgpWDR5XoWns=";
+    core = "yYfVjV0C2T9kIkax2pKjU1YdEpHEDKpfmH+aKtKqjRc=";
     storage = "tc096iNfSkkOSwkSNgpJve50Zn91o5cb/K4hsGmxB0s=";
   };
 
