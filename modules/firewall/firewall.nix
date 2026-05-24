@@ -56,7 +56,7 @@ let
     pass in quick proto udp to any port { ${wgPortSet} } keep state
 
     # Allow SSH and VNC only from trusted machines (laptops + storage peer)
-    pass in quick from <nixoshybrid_trusted> to any port { 22, 5900 } keep state
+    pass in quick proto tcp from <nixoshybrid_trusted> to any port { 22, 5900 } keep state
 
     # Block everything else inbound
     block in all
