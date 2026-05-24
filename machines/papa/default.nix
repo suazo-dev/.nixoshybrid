@@ -9,7 +9,7 @@
   hardware = "hardware-configuration.nix";
 
   wgPublicKeys = {
-    core = "yYfVjV0C2T9kIkax2pKjU1YdEpHEDKpfmH+aKtKqjRc=";
+    core = "XRzfB39T5pme2JitUbiJK9j7HsCpZZagOTTKbCHvHAo=";
   };
 
   sshPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKwZUBkhznVjOcbgGAfQUKYOQJtNjxnTT3LDM2KMgcMB";
