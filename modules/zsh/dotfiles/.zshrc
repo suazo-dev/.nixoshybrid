@@ -259,6 +259,13 @@ alias wg0off='wgoff wg0'
 alias wg1on='wgon wg1'
 alias wg1off='wgoff wg1'
 
+if [[ "$(uname -s)" == "Darwin" && "${HOST:-}" == "papa" ]]; then
+  papawgconf='/var/folders/rf/c3206bzx3_3_c_x2_56nkl7r0000gn/T/opencode/papa-core.conf'
+  alias papawgon="chmod 600 '$papawgconf' && sudo nix shell 'nixpkgs#wireguard-tools' 'nixpkgs#wireguard-go' -c wg-quick up '$papawgconf'"
+  alias papawgoff="sudo nix shell 'nixpkgs#wireguard-tools' 'nixpkgs#wireguard-go' -c wg-quick down '$papawgconf'"
+  alias papawgshow="sudo nix shell 'nixpkgs#wireguard-tools' -c wg show"
+fi
+
 # Rebuild
 rb() {
   local name="${1:-$(hostname)}"
