@@ -222,49 +222,36 @@ dstatus() { direnv status; }
 # WireGuard helpers
 wgon() {
   if [[ -z "$1" ]]; then
-    echo "usage: wgon <wg0|wg1>"
+    echo "usage: wgon <network>   (e.g. wgon core)"
     return 1
   fi
-
   if [[ "$(uname -s)" == "Darwin" ]]; then
-    if command -v open >/dev/null 2>&1; then
-      open -a WireGuard >/dev/null 2>&1 || true
-    fi
-    echo "manage WireGuard tunnels from the WireGuard app on macOS"
-    return 0
+    sudo launchctl kickstart -k "system/org.nixos.wireguard-$1"
+    return
   fi
-
-  sudo systemctl restart "wg-quick-$1"
+  sudo systemctl restart "wg-quick@$1"
 }
 
 wgoff() {
   if [[ -z "$1" ]]; then
-    echo "usage: wgoff <wg0|wg1>"
+    echo "usage: wgoff <network>   (e.g. wgoff core)"
     return 1
   fi
-
   if [[ "$(uname -s)" == "Darwin" ]]; then
-    if command -v open >/dev/null 2>&1; then
-      open -a WireGuard >/dev/null 2>&1 || true
-    fi
-    echo "manage WireGuard tunnels from the WireGuard app on macOS"
-    return 0
+    sudo launchctl stop "system/org.nixos.wireguard-$1"
+    return
   fi
-
-  sudo systemctl stop "wg-quick-$1"
+  sudo systemctl stop "wg-quick@$1"
 }
 
-alias wg0on='wgon wg0'
-alias wg0off='wgoff wg0'
-alias wg1on='wgon wg1'
-alias wg1off='wgoff wg1'
+wgshow() {
+  sudo wg show all
+}
 
-if [[ "$(uname -s)" == "Darwin" && "${HOST:-}" == "papa" ]]; then
-  papawgconf='/var/folders/rf/c3206bzx3_3_c_x2_56nkl7r0000gn/T/opencode/papa-core.conf'
-  alias papawgon="chmod 600 '$papawgconf' && sudo nix shell 'nixpkgs#wireguard-tools' 'nixpkgs#wireguard-go' -c wg-quick up '$papawgconf'"
-  alias papawgoff="sudo nix shell 'nixpkgs#wireguard-tools' 'nixpkgs#wireguard-go' -c wg-quick down '$papawgconf'"
-  alias papawgshow="sudo nix shell 'nixpkgs#wireguard-tools' -c wg show"
-fi
+alias wgcore='wgon core'
+alias wgcoreoff='wgoff core'
+alias wgstorage='wgon storage'
+alias wgstorageoff='wgoff storage'
 
 # Rebuild
 rb() {

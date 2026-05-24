@@ -65,7 +65,7 @@
 
   network = {
     wg = {
-      core = { octet = 1; };
+      core = { octet = 1; listen = true; };
       portal = { octet = 1; };
     };
   };

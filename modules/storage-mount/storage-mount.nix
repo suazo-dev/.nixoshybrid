@@ -1,37 +1,23 @@
-# Storage mount module — discovers storage target from registry by role.
-# No machine names hardcoded. Finds peers on shared p2p WG networks
-# that have the "storage" role.
+# Storage mount module — discovers a reachable storage target from the registry.
+# No machine names hardcoded. Uses the normal WG reachability rules to find
+# the storage peer and mount over the best available path.
 { pkgs, lib, machineName, spec, ... }:
 let
   registry = import ../../network/registry.nix;
+  hosts = import ../../network/hosts.nix { inherit lib; };
   mountCfg = spec.facts.storage.nfs or {};
-  myEntry = registry.machines.${machineName};
 
-  # Find storage peers: roles with the storage capability on a shared p2p WG network.
-  myP2PNetworks = builtins.filter (netName:
-    builtins.hasAttr netName registry.networks
-    && (registry.networks.${netName}.type or "hub") == "p2p"
-  ) (builtins.attrNames (myEntry.wg or {}));
+  # Find reachable storage peers using the registry's normal WG reachability rules.
+  storagePeers = builtins.filter (name:
+    name != machineName
+    && builtins.elem "storage" (registry.machines.${name}.roles or [ ])
+    && hosts.resolveIp machineName name != null
+  ) (builtins.attrNames registry.machines);
 
-  storagePeers = lib.unique (lib.concatMap (netName:
-    builtins.filter (name:
-      name != machineName
-      && builtins.hasAttr netName ((registry.machines.${name}).wg or {})
-      && builtins.elem "storage" (registry.machines.${name}.roles or [ ])
-    ) (builtins.attrNames registry.machines)
-  ) myP2PNetworks);
-
-  # Use the first storage peer's WG IP as the remote host
+  # Use the first reachable storage peer as the remote host.
   storageTarget = if storagePeers != [] then builtins.head storagePeers else null;
-  storageTargetNet = if storageTarget != null then
-    let
-      sharedNet = builtins.head (builtins.filter (netName:
-        builtins.hasAttr netName ((registry.machines.${storageTarget}).wg or {})
-      ) myP2PNetworks);
-    in registry.machines.${storageTarget}.wg.${sharedNet}
-  else null;
 
-  remoteHost = if storageTargetNet != null then storageTargetNet.ip else "";
+  remoteHost = if storageTarget != null then hosts.resolveIp machineName storageTarget else "";
   remotePath =
     if mountCfg.remotePath or null != null then
       mountCfg.remotePath
@@ -49,7 +35,7 @@ let
     mount_point=${builtins.toJSON mountPoint}
 
     if [ -z "$remote_host" ]; then
-      printf 'storage host not found — no p2p peer in registry.\n' >&2
+      printf 'storage host not found — no reachable storage peer in registry.\n' >&2
       exit 1
     fi
 

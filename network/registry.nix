@@ -83,15 +83,6 @@ let
       fullTunnel = false;
       extraAllowedIPs = [ "10.0.0.0/24" ];
     };
-
-    storage = {
-      subnet = "10.2.0.0/24";
-      port = 51822;
-      hostPriority = 100;
-      type = "p2p";
-      fullTunnel = false;
-      extraAllowedIPs = [ ];
-    };
   };
 
   # Infrastructure config

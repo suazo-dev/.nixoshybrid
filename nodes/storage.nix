@@ -13,7 +13,6 @@
   network = {
     wg = {
       core = { octet = 2; };
-      storage = { octet = 2; listen = true; };
     };
   };
 

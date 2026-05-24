@@ -40,7 +40,7 @@ let
     map (n: toString registry.networks.${n}.port) hubNetworks
   );
 
-  # For storage/core: find peers on shared p2p networks for NFS access
+  # Storage peers reachable over dedicated p2p links.
   p2pPeerWgIps = lib.concatMap (netName:
     let
       netDef = registry.networks.${netName} or {};
@@ -56,6 +56,17 @@ let
         builtins.hasAttr netName ((registry.machines.${name}).wg or {})
       ) (builtins.attrNames registry.machines))
   ) activeNetworks;
+
+  # Core machines are allowed to mount storage over the main routed network.
+  corePeerWgIps = lib.concatMap (name:
+    let machine = allMachines.${name};
+    in if name != machineName
+       && machine.nodeName != "gateway"
+       && builtins.hasAttr "core" (machine.wg or {})
+    then [ machine.wg.core.ip ]
+    else []
+  ) (builtins.attrNames allMachines);
+  nfsPeerWgIps = lib.unique (corePeerWgIps ++ p2pPeerWgIps);
 
   # Trusted user machine IPs — non-gateway machines on core + portal machines.
   # These are the user's own machines (papa, mama, slim, tee).
@@ -177,10 +188,10 @@ in {
               "udp dport ${toString port} accept"
             ) p2pListenPorts)}
             ${lib.optionalString (trustedUserIps != []) "ip saddr { ${trustedUserIpSet} } tcp dport 22 accept"}
-            ${lib.optionalString nfsEnabled (lib.concatStringsSep "\n            " (lib.concatMap (ip: [
+            ${lib.optionalString (nfsEnabled && nfsPeerWgIps != []) (lib.concatStringsSep "\n            " (lib.concatMap (ip: [
               "ip saddr ${ip} tcp dport 2049 accept"
               "ip saddr ${ip} udp dport 2049 accept"
-            ]) p2pPeerWgIps))}
+            ]) nfsPeerWgIps))}
             ${lib.optionalString (hermesEnabled && trustedUserIps != []) "ip saddr { ${trustedUserIpSet} } tcp dport { 8642, 9119 } accept"}
             ip protocol icmp accept
           }

@@ -10,7 +10,6 @@
 
   wgPublicKeys = {
     core = "yYfVjV0C2T9kIkax2pKjU1YdEpHEDKpfmH+aKtKqjRc=";
-    storage = "6GvFPHosmRF+13KCrtGzSF3W1UR7Af7utexLA0dIuwk=";
   };
 
   sshPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKwZUBkhznVjOcbgGAfQUKYOQJtNjxnTT3LDM2KMgcMB";
