@@ -8,6 +8,11 @@
   homeStateVersion = "25.11";
   hardware = "hardware-configuration.nix";
 
+  lan = {
+    interface = "en0";
+    ip = "192.168.8.11";
+  };
+
   wgPublicKeys = {
     core = "XRzfB39T5pme2JitUbiJK9j7HsCpZZagOTTKbCHvHAo=";
   };
