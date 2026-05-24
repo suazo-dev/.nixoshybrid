@@ -72,8 +72,8 @@ let
       subnet = "10.0.0.0/24";
       port = 51820;
       hostPriority = 300;
-      fullTunnel = false;
-      extraAllowedIPs = [ "10.1.0.0/24" ];
+      fullTunnel = true;
+      extraAllowedIPs = [ ];
     };
 
     portal = {
