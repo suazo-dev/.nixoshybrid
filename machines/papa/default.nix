@@ -12,7 +12,7 @@
     core = "XRzfB39T5pme2JitUbiJK9j7HsCpZZagOTTKbCHvHAo=";
   };
 
-  sshPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKwZUBkhznVjOcbgGAfQUKYOQJtNjxnTT3LDM2KMgcMB";
+  sshPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG5eRdGcbhvts60t3K2ckcfLA7R/gc39YDVCUPZf9qgL";
 
   extraModules = [ ];
   allowedUnfree = [ ];
