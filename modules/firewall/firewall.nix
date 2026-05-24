@@ -17,7 +17,7 @@ let
     else []
   ) (builtins.attrNames allMachines);
 
-  # Also include p2p peers (mama) for storage network access
+  # WireGuard ports for all networks this machine participates in
   myEntry = allMachines.${machineName} or {};
   myNetworks = builtins.attrNames (myEntry.wg or {});
   p2pPeerIps = lib.concatMap (netName:
@@ -39,6 +39,10 @@ let
   trustedIps = lib.unique (portalPeerIps ++ p2pPeerIps);
   trustedSet = lib.concatStringsSep ", " trustedIps;
 
+  activeNetworks = builtins.filter (n: builtins.hasAttr n registry.networks) myNetworks;
+  wgPorts = lib.unique (map (n: registry.networks.${n}.port) activeNetworks);
+  wgPortSet = lib.concatStringsSep ", " (map toString wgPorts);
+
   managedAnchor = ''
     table <nixoshybrid_trusted> const { ${trustedSet} }
 
@@ -47,6 +51,9 @@ let
 
     # Allow loopback
     pass in quick on lo0 all keep state
+
+    # Allow WireGuard UDP so tunnels can re-establish (keepalives, rekeying, sleep/wake)
+    pass in quick proto udp to any port { ${wgPortSet} } keep state
 
     # Allow SSH and VNC only from trusted machines (laptops + storage peer)
     pass in quick from <nixoshybrid_trusted> to any port { 22, 5900 } keep state
