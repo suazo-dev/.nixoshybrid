@@ -48,9 +48,11 @@ in {
     remoteTuiPackage
   ];
 
-  home-manager.users.${spec.user} = lib.mkIf (!isHermesHost) { ... }: {
-    home.file.".hermes/config.yaml".source = ./dotfiles/config.yaml;
-    home.file.".hermes/SOUL.md".source = ./dotfiles/SOUL.md;
+  home-manager.users.${spec.user} = { ... }: {
+    home.file = lib.mkIf (!isHermesHost) {
+      ".hermes/config.yaml".source = ./dotfiles/config.yaml;
+      ".hermes/SOUL.md".source = ./dotfiles/SOUL.md;
+    };
   };
 } // lib.optionalAttrs isHermesHost {
   # One env file for gateway runtime secrets/settings. Suggested contents:
