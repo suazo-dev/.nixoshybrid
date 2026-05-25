@@ -45,7 +45,6 @@ in {
   home-manager.users.${spec.user} = { ... }: {
     programs.ssh = {
       enable = true;
-      addKeysToAgent = if isDarwin then "4h" else "confirm 4h";
       extraConfig = lib.optionalString isDarwin ''
         UseKeychain yes
       '';
@@ -59,6 +58,7 @@ in {
           );
           identityFile = "~/.ssh/id_ed25519";
           forwardAgent = true;
+          addKeysToAgent = if isDarwin then "4h" else "confirm 4h";
           extraOptions.StrictHostKeyChecking = "accept-new";
         };
       };
