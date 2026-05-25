@@ -47,6 +47,11 @@ in {
     inputs.hermes-agent.packages.${spec.system}.default
     remoteTuiPackage
   ];
+
+  home-manager.users.${spec.user} = lib.mkIf (!isHermesHost) { ... }: {
+    home.file.".hermes/config.yaml".source = ./dotfiles/config.yaml;
+    home.file.".hermes/SOUL.md".source = ./dotfiles/SOUL.md;
+  };
 } // lib.optionalAttrs isHermesHost {
   # One env file for gateway runtime secrets/settings. Suggested contents:
   #   API_SERVER_KEY=strong-random-string  # required for 0.0.0.0 binds
