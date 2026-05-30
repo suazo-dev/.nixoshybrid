@@ -140,6 +140,15 @@ No deployment tooling. Rebuilding all machines means SSHing into each one indivi
 
 # Execution Plan
 
+## Phase 0 — Create `.nixostest`
+1. Create `suazo-dev/.nixostest` repo on GitHub (private)
+2. Copy the repo: `cp -r ~/.nixoshybrid ~/.nixostest`
+3. Update `lib/defaults.nix` → `repoDirName = ".nixostest"`
+4. Point remote: `cd ~/.nixostest && git remote set-url origin git@github.com:suazo-dev/.nixostest.git`
+5. Push: `git push -u origin main`
+
+All phases 1–6 are implemented in `.nixostest` only.
+
 ## Phase 1 — Module architecture (A1, A2, A3)
 Refactor `nodes/base.nix` down to universal-only. Add `modules`/`linuxModules`/`darwinModules` to node schema. Update `lib/mkHost.nix` to union node-contributed modules. Redistribute all removed modules into the appropriate node specs.
 
@@ -165,14 +174,14 @@ All four fixes are independent and can be applied together:
 ## Phase 5 — deploy-rs (D1)
 Add deploy-rs to `flake.nix`. Document that deploy runs from papa or tiny only.
 
-## Phase 6 — Test in `.nixostest`
-All changes applied to `.nixostest` first. Validate with:
+## Phase 6 — Validate in `.nixostest`
+All changes were made in `.nixostest`. Validate with:
 ```bash
 nix flake check
 nix build .#nixosConfigurations.{mama,tiny,slim}.config.system.build.toplevel
 nix build .#darwinConfigurations.papa.system
 ```
-Fix evaluation errors, commit, then port to `.nixoshybrid`.
+Fix any evaluation errors and commit. Do NOT port back to `.nixoshybrid` until explicitly instructed.
 
 ## Phase 7 — Live deploy order
 From papa or tiny:
