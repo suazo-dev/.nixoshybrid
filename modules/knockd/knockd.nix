@@ -6,7 +6,11 @@ let
   registry = import ../../network/registry.nix;
   knockd = pkgs.callPackage ./package.nix { };
   isGateway = spec.nodeName == "gateway";
-  lanInterface = (registry.machines.${machineName}.lan or {}).interface or "eno1";
+  lanInterface =
+    let iface = (registry.machines.${machineName}.lan or {}).interface or null;
+    in if isGateway && iface == null
+       then throw "Gateway machine '${machineName}' must have 'lan.interface' set for knockd"
+       else iface;
 
   knockdConf = pkgs.writeText "knockd.conf" ''
     [options]

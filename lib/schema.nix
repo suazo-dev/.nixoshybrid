@@ -66,12 +66,12 @@ in
         throw "Node '${nodeName}' is missing required keys: ${lib.concatStringsSep ", " missing}"
       else if !isStringList raw.supportedSystems then
         throw "Node '${nodeName}': 'supportedSystems' must be a list of strings"
-      else if raw ? remove && !isStringList raw.remove then
-        throw "Node '${nodeName}': 'remove' must be a list of strings"
-      else if raw ? removeLinux && !isStringList raw.removeLinux then
-        throw "Node '${nodeName}': 'removeLinux' must be a list of strings"
-      else if raw ? removeDarwin && !isStringList raw.removeDarwin then
-        throw "Node '${nodeName}': 'removeDarwin' must be a list of strings"
+      else if raw ? modules && !isStringList raw.modules then
+        throw "Node '${nodeName}': 'modules' must be a list of strings"
+      else if raw ? linuxModules && !isStringList raw.linuxModules then
+        throw "Node '${nodeName}': 'linuxModules' must be a list of strings"
+      else if raw ? darwinModules && !isStringList raw.darwinModules then
+        throw "Node '${nodeName}': 'darwinModules' must be a list of strings"
       else if raw ? network && !isAttrs raw.network then
         throw "Node '${nodeName}': 'network' must be an attrset"
       else if raw ? facts && !isAttrs raw.facts then

@@ -49,22 +49,16 @@ let
 
   defaultExtraGroups = if isDarwin then [ ] else (defaults.extraGroups or [ ]);
 
-  # Base modules minus node removals
-  nodeRemove = nodeSpec.remove or [ ];
-  nodeRemoveLinux = nodeSpec.removeLinux or [ ];
-  nodeRemoveDarwin = nodeSpec.removeDarwin or [ ];
-
-  baseModules = builtins.filter (m: !(builtins.elem m nodeRemove)) (base.modules or [ ]);
-  baseLinuxModules = builtins.filter (m:
-    !(builtins.elem m nodeRemove) && !(builtins.elem m nodeRemoveLinux)
-  ) (base.linuxModules or [ ]);
-  baseDarwinModules = builtins.filter (m:
-    !(builtins.elem m nodeRemove) && !(builtins.elem m nodeRemoveDarwin)
-  ) (base.darwinModules or [ ]);
+  # Base modules plus node-contributed modules
+  nodeModules = nodeSpec.modules or [ ];
+  nodeLinuxModules = nodeSpec.linuxModules or [ ];
+  nodeDarwinModules = nodeSpec.darwinModules or [ ];
 
   moduleNames = lib.unique (
-    baseModules
-    ++ (if isDarwin then baseDarwinModules else baseLinuxModules)
+    (base.modules or [ ])
+    ++ (if isDarwin then (base.darwinModules or [ ]) else (base.linuxModules or [ ]))
+    ++ nodeModules
+    ++ (if isDarwin then nodeDarwinModules else nodeLinuxModules)
     ++ (checkedMachine.extraModules or [ ])
   );
 

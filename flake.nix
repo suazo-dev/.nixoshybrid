@@ -58,6 +58,11 @@
       url = "github:NousResearch/hermes-agent";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    deploy-rs = {
+      url = "github:serokell/deploy-rs";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs @ {
@@ -86,9 +91,23 @@
         linuxMachineNames = builtins.filter (n: lib.hasSuffix "-linux" (machineSystem n)) machineNames;
         darwinMachineNames = builtins.filter (n: lib.hasSuffix "-darwin" (machineSystem n)) machineNames;
         mkHost = import ./lib/mkHost.nix {inherit inputs lib;};
+        nixosConfigs = lib.genAttrs linuxMachineNames mkHost;
       in {
-        nixosConfigurations = lib.genAttrs linuxMachineNames mkHost;
+        nixosConfigurations = nixosConfigs;
         darwinConfigurations = lib.genAttrs darwinMachineNames mkHost;
+
+        deploy.nodes = lib.genAttrs linuxMachineNames (name: {
+          hostname = name;
+          profiles.system = {
+            user = "root";
+            sshUser = "suazo";
+            path = inputs.deploy-rs.lib.${machineSystem name}.activate.nixos nixosConfigs.${name};
+          };
+        });
+
+        checks = builtins.mapAttrs
+          (system: deployLib: deployLib.deployChecks inputs.self.deploy)
+          inputs.deploy-rs.lib;
       };
     };
 }

@@ -14,8 +14,13 @@ in lib.mkIf (isLinux && hasStaticLan) ({
     }
   ];
 
-  networking.defaultGateway = lib.mkDefault registry.lan.gatewayIp;
-  networking.nameservers = lib.mkDefault registry.lan.nameservers;
+  # Static LAN hosts should not rely on DHCP for routes or DNS.
+  networking.useDHCP = lib.mkForce false;
+  networking.defaultGateway = {
+    address = registry.lan.gatewayIp;
+    interface = lanInterface;
+  };
+  networking.nameservers = registry.lan.nameservers;
 } // lib.optionalAttrs (lanInterface != null) {
   networking.interfaces.${lanInterface} = {
     useDHCP = false;

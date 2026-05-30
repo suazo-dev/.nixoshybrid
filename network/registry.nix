@@ -66,6 +66,19 @@ let
     else
       null;
 
+  # SSH public key uniqueness check — catches copy-paste errors
+  allSshKeys = builtins.filter (x: x != null) (map (name:
+    rawMachines.${name}.sshPublicKey
+  ) machineNames);
+  duplicateSshKeys = builtins.filter (key:
+    builtins.length (builtins.filter (k: k == key) allSshKeys) > 1
+  ) (unique allSshKeys);
+  _sshKeyUniquenessCheck =
+    if duplicateSshKeys != [ ] then
+      throw "Duplicate SSH public keys found across machines — possible copy-paste error"
+    else
+      null;
+
   # WireGuard network definitions
   networks = {
     core = {
@@ -159,13 +172,27 @@ let
     }
   ) machineNames));
 
+  # Role-matrix: which roles may SSH into which roles.
+  # Portals can only reach gateway + other portals.
+  # Core/storage only accept keys from gateway + core + storage.
+  sshRoleMatrix = {
+    gateway = [ "gateway" "core" "storage" "portal" ];
+    core    = [ "gateway" "core" "storage" ];
+    storage = [ "gateway" "core" "storage" ];
+    portal  = [ "gateway" "portal" ];
+  };
+
   sshAuthorizedKeysFor = machineName:
     let
       machine = baseMachines.${machineName};
+      allowedSourceRoles = sshRoleMatrix.${machine.nodeName} or [ ];
       otherNames = builtins.filter (name: name != machineName) machineNames;
     in unique (map (name:
       "${baseMachines.${name}.nodeName}-${baseMachines.${name}.instanceName}"
-    ) (builtins.filter (name: baseMachines.${name}.sshPublicKey != null) otherNames));
+    ) (builtins.filter (name:
+      baseMachines.${name}.sshPublicKey != null
+      && builtins.elem baseMachines.${name}.nodeName allowedSourceRoles
+    ) otherNames));
 
   machines = builtins.listToAttrs (map (machineName: {
     name = machineName;

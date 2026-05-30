@@ -1,9 +1,9 @@
 {
   allowedKeys = [
     "supportedSystems"
-    "remove"
-    "removeLinux"
-    "removeDarwin"
+    "modules"
+    "linuxModules"
+    "darwinModules"
     "network"
     "facts"
   ];

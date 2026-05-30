@@ -3,7 +3,7 @@
 { pkgs, lib, spec, machineName, config, ... }:
 let
   registry = import ../../network/registry.nix;
-  isGateway = machineName == registry.gateway.machineName;
+  isGateway = spec.nodeName == "gateway";
   duckdnsDomain = "${registry.gateway.duckdnsDomain}.duckdns.org";
 
   updateScript = pkgs.writeShellScript "duckdns-update" ''

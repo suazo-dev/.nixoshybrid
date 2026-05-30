@@ -5,6 +5,7 @@
 { lib, pkgs, inputs, spec, machineName, config, ... }:
 let
   registry = import ../../network/registry.nix;
+  hosts = import ../../network/hosts.nix { inherit lib; };
   nodeRoot = ../../nodes;
   isDarwin = lib.hasSuffix "-darwin" spec.system;
   isLinux = !isDarwin;
@@ -15,8 +16,7 @@ let
       node = import (nodeRoot + "/${m.nodeName}.nix");
     in node.facts.hermes.gateway or false
   ) (throw "No machine with hermes.gateway fact found") registry.machineNames;
-  hermesMachine = registry.machines.${hermesHostName};
-  hermesIp = hermesMachine.wg.core.ip;
+  hermesIp = hosts.resolveIp machineName hermesHostName;
   hermesApiPort = 8642;
   dashboardPort = 9119;
   envSecretName = "hermes/runtime-env";
@@ -24,7 +24,7 @@ let
   hermesPackage = inputs.hermes-agent.packages.${spec.system}.default.override {
     extraDependencyGroups = [ "messaging" ];
   };
-  remoteTuiPackage = pkgs.writeShellScriptBin "hermes-${hermesHostName}" ''
+  remoteTuiPackage = pkgs.writeShellScriptBin "hermes-remote" ''
     set -euo pipefail
 
     dashboard_url="http://${hermesIp}:${toString dashboardPort}"

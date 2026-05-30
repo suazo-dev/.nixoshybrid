@@ -68,28 +68,27 @@ let
   ) (builtins.attrNames allMachines);
   nfsPeerWgIps = lib.unique (corePeerWgIps ++ p2pPeerWgIps);
 
-  # Trusted user machine IPs — non-gateway machines on core + portal machines.
-  # These are the user's own machines (papa, mama, slim, tee).
-  # Tiny (gateway) is excluded — it routes traffic but cannot initiate into protected machines.
+  # Trusted IPs for SSH/management access.
+  # On storage/core machines: only gateway + core + storage WG IPs (NOT portals).
+  # Portals must SSH through the gateway — a stolen portal cannot reach storage directly.
   allMachines = registry.machines;
+  myRole = (builtins.head (builtins.filter (r: true) spec.roles));
+  trustedRoles = {
+    gateway = [ "core" "storage" ];
+    core    = [ "gateway" "core" "storage" ];
+    storage = [ "gateway" "core" "storage" ];
+    portal  = [ "gateway" "portal" ];
+  };
+  allowedRoles = trustedRoles.${myRole} or [ ];
   trustedUserIps =
-    let
-      coreIps = lib.concatMap (name:
-        let machine = allMachines.${name};
-        in if name != machineName
-           && machine.nodeName != "gateway"
-           && builtins.hasAttr "core" (machine.wg or {})
-        then [ machine.wg.core.ip ]
-        else []
-      ) (builtins.attrNames allMachines);
-      portalIps = lib.concatMap (name:
-        let machine = allMachines.${name};
-        in if machine.nodeName == "portal"
-           && builtins.hasAttr "portal" (machine.wg or {})
-        then [ machine.wg.portal.ip ]
-        else []
-      ) (builtins.attrNames allMachines);
-    in lib.unique (coreIps ++ portalIps);
+    lib.concatMap (name:
+      let machine = allMachines.${name};
+      in if name != machineName
+         && builtins.elem machine.nodeName allowedRoles
+         && builtins.hasAttr "core" (machine.wg or {})
+      then [ machine.wg.core.ip ]
+      else []
+    ) (builtins.attrNames allMachines);
   trustedUserIpSet = lib.concatStringsSep ", " trustedUserIps;
 
   # P2P listen ports on this machine (for WireGuard handshakes from LAN peers)
@@ -135,7 +134,10 @@ in {
           chain forward {
             type filter hook forward priority 0; policy drop;
             ct state established,related accept
-            iifname { ${hubInterfaceSet} } oifname { ${hubInterfaceSet} } accept
+            # Same-interface-only forward — no cross-segment (portal↔core) routing
+            ${lib.concatStringsSep "\n            " (map (iface:
+              "iifname \"${iface}\" oifname \"${iface}\" accept"
+            ) hubInterfaces)}
             ${lib.concatStringsSep "\n            " (map (iface:
               "iifname \"${iface}\" oifname != { ${hubInterfaceSet} } accept"
             ) fullTunnelInterfaces)}

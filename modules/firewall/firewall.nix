@@ -1,19 +1,20 @@
 # Darwin firewall — registry-driven, zero-trust inbound.
 # Internet responses flow via state tracking (pass out keep state).
-# Only user's laptops (portal machines) can initiate SSH/VNC into papa.
-# Tiny (gateway) cannot initiate connections into papa.
+# Only gateway (tiny) can initiate SSH/VNC into papa.
+# Portals must proxy through gateway — a stolen portal cannot reach papa directly.
 { lib, machineName, spec, ... }:
 let
   registry = import ../../network/registry.nix;
   allMachines = registry.machines;
   isCore = builtins.elem "core" (spec.roles or [ ]);
 
-  # Only portal machines (user's laptops) can initiate connections inbound
-  portalPeerIps = lib.concatMap (name:
+  # Only gateway can initiate SSH/VNC inbound — portals must proxy through gateway.
+  # This prevents a stolen portal from having direct SSH access to papa.
+  gatewayPeerIps = lib.concatMap (name:
     let machine = allMachines.${name};
-    in if machine.nodeName == "portal"
-       && builtins.hasAttr "portal" (machine.wg or {})
-    then [ machine.wg.portal.ip ]
+    in if machine.nodeName == "gateway"
+       && builtins.hasAttr "core" (machine.wg or {})
+    then [ machine.wg.core.ip ]
     else []
   ) (builtins.attrNames allMachines);
 
@@ -36,7 +37,7 @@ let
       ) (builtins.attrNames allMachines))
   ) myNetworks;
 
-  trustedIps = lib.unique (portalPeerIps ++ p2pPeerIps);
+  trustedIps = lib.unique (gatewayPeerIps ++ p2pPeerIps);
   trustedSet = lib.concatStringsSep ", " trustedIps;
 
   activeNetworks = builtins.filter (n: builtins.hasAttr n registry.networks) myNetworks;
